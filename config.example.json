@@ -1,0 +1,27 @@
+{
+  "clientId": "1538695178880159908",
+
+  // "full" | "project" | "minimal" - see README
+  "privacy": "full",
+  // Folder-name globs that are always shown as "minimal", e.g. ["client-*"]
+  "hideProjects": [],
+
+  // Animated Clawd: where assets/clawd/*.gif are hosted (public https URL).
+  // Bump "version" after re-hosting new art so Discord refetches it.
+  // No hosting? Upload assets/clawd/portal/*.png as Art Assets, set "portal": true.
+  "images": { "baseUrl": "https://raw.githubusercontent.com/telljoe/claude-discord-rpc-dist/main/assets/clawd", "version": "2", "portal": false },
+
+  // Used only when images.baseUrl is empty and images.portal is false.
+  "assets": { "largeImage": "claude", "smallImageBusy": "busy", "smallImageIdle": "idle" },
+
+  // 3 = Watching (coexists with games/Unity), 0 = Playing
+  "activityType": 3,
+  // "smart" = this turn while working, time blocked while waiting on you
+  "timer": "smart",
+  "showWhenIdle": true,
+  "toolDwellSeconds": 12,
+  "doneSeconds": 300,
+
+  "githubButton": false,
+  "buttons": []
+}
