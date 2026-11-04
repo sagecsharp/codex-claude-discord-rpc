@@ -144,4 +144,3 @@ test('missing Claude installation returns an empty list', (t) => {
   const f = fixture(t);
   assert.deepEqual(new ClaudeReader({ root: path.join(f.root, 'not-installed') }).read(), []);
 });
-
