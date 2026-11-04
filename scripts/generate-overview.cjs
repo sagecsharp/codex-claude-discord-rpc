@@ -16,7 +16,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" v
 <text x="1138" y="57" text-anchor="end" font-size="12" fill="#738078" letter-spacing="1.4">motion study / 01</text>
 <text x="62" y="127" font-size="11" fill="#96a39b" letter-spacing="2">codex + claude for discord</text>
 <text x="58" y="188" font-size="50" fill="#f0f3f0" letter-spacing="-2.4">two minds. <tspan fill="#8a9890">one presence.</tspan></text>
-<text x="62" y="222" font-size="15" fill="#8e9a93">recognizable logos. clear action badges. see what each assistant is doing.</text>
+<text x="62" y="222" font-size="15" fill="#8e9a93">recognizable logos. simple action icons. no text inside the discord images.</text>
 <rect x="62" y="266" width="532" height="354" rx="18" fill="#111416" stroke="#29302c"/>
 <rect x="610" y="266" width="528" height="354" rx="18" fill="#111416" stroke="#29302c"/>
 <text x="87" y="302" font-size="15" fill="#e1e7e2">codex</text><text x="569" y="301" font-size="10" text-anchor="end" fill="#6f7d74" letter-spacing="1">01 / orbit</text>
@@ -49,7 +49,7 @@ const actionOverview = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" hei
   <g font-family="Segoe UI, Arial, sans-serif">
   <text x="50" y="50" font-size="14" fill="#b5c5b8">dual presence / action study</text>
   <text x="50" y="112" font-size="47" fill="#eef3ed" letter-spacing="-1.8">see what it’s doing.</text>
-  <text x="50" y="148" font-size="15" fill="#8fa292">distinct symbols, clear at a glance. each badge shown at 64px and its actual 32px size.</text>
+  <text x="50" y="148" font-size="15" fill="#8fa292">logos and pictograms only. action wording stays in the discord text fields.</text>
   <rect x="50" y="185" width="1104" height="158" rx="18" fill="#121a17" stroke="#2d3c31"/>
   <image href="${img('both-working')}" x="74" y="208" width="112" height="112"/>
   <circle cx="183" cy="309" r="25" fill="#121a17"/><image href="${img('action-editing')}" x="162" y="288" width="42" height="42"/>

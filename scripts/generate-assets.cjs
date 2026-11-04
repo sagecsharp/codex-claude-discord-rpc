@@ -7,7 +7,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Resvg } = require('@resvg/resvg-js');
 const { GIFEncoder, quantize, applyPalette } = require('gifenc');
-const { ACTIONS, COLORS, icon, drawBadge } = require('./action-art.cjs');
+const { ACTIONS, drawBadge } = require('./action-art.cjs');
 
 const target = path.resolve(__dirname, '../assets');
 const WIDTH = 256;
@@ -27,18 +27,6 @@ const arc = (radius, start, length, color, opacity = 1, width = 1.7) => {
   return `<path d="M${n(128 + radius * Math.cos(radians))} ${n(128 + radius * Math.sin(radians))} A${radius} ${radius} 0 ${length > 180 ? 1 : 0} 1 ${n(128 + radius * Math.cos(end))} ${n(128 + radius * Math.sin(end))}" fill="none" stroke="${color}" stroke-opacity="${n(opacity)}" stroke-width="${width}" stroke-linecap="round"/>`;
 };
 const logo = (provider, x = 128, y = 128, size = 108) => `<g transform="translate(${x - size / 2} ${y - size / 2}) scale(${size / 24})"><path d="${paths[provider === 'codex' ? 'chatgpt' : 'claude']}" fill="${provider === 'codex' ? '#f5f6f6' : '#da947b'}"/></g>`;
-
-// Rasterize the four text labels once, rather than loading fonts for every frame.
-const stateLabels = Object.fromEntries(['working', 'thinking', 'waiting', 'idle'].map(state => {
-  const label = state === 'idle' ? 'ready' : state;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="38"><text x="64" y="27" text-anchor="middle" font-family="Arial, sans-serif" font-size="23" font-weight="600" fill="${COLORS[state]}">${label}</text></svg>`;
-  return [state, new Resvg(svg).render().asPng().toString('base64')];
-}));
-function statusPill(state, progress) {
-  return `<rect x="41" y="200" width="174" height="39" rx="19.5" fill="#101617" stroke="${COLORS[state]}" stroke-opacity=".3"/>
-    <g transform="translate(52 208) scale(.18)" fill="none" stroke="${COLORS[state]}" color="${COLORS[state]}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">${icon(state, progress)}</g>
-    <image href="data:image/png;base64,${stateLabels[state]}" x="76" y="200" width="128" height="38"/>`;
-}
 
 function draw(provider, state, progress) {
   const phase = TAU * progress;
@@ -81,7 +69,6 @@ function draw(provider, state, progress) {
     <circle cx="128" cy="128" r="118" fill="url(#ambient)"/>
     ${movement}
     ${logo(provider, 128, 128, isCodex ? 110 : 111)}
-    ${statusPill(state, progress)}
   </svg>`;
 }
 
@@ -98,7 +85,6 @@ function drawBoth(progress, state) {
     <g transform="translate(-50 0)">${circle(48, '#a4e7d5', .15)}${arc(48, angle, sweep, '#a4e7d5', opacity, 1.3)}</g>
     <g transform="translate(50 0)">${circle(48, '#dda086', .15)}${arc(48, -angle, sweep, '#dda086', quiet ? opacity : .5 + pulse * .3, 1.3)}</g>
     ${logo('codex', 78, 128, 62)}${logo('claude', 178, 128, 62)}
-    ${statusPill(state, progress)}
   </svg>`;
 }
 
