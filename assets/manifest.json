@@ -47,5 +47,21 @@
       "done",
       "idle"
     ]
+  },
+  "split": {
+    "pattern": "split-{codexState}-{claudeState}",
+    "axis": "vertical",
+    "left": "codex",
+    "right": "claude",
+    "states": [
+      "working",
+      "thinking",
+      "waiting"
+    ],
+    "width": 256,
+    "height": 256,
+    "frames": 80,
+    "frameDurationMs": 50,
+    "loopDurationMs": 4000
   }
 }

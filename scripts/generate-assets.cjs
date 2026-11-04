@@ -33,7 +33,7 @@ const logo = (provider, x = 128, y = 128, size = 108) => {
   return `<g filter="url(#logo-glow)" opacity=".25">${mark}</g>${mark}`;
 };
 
-function draw(provider, state, progress) {
+function draw(provider, state, progress, options = {}) {
   const phase = TAU * progress;
   const pulse = (Math.sin(phase - Math.PI / 2) + 1) / 2;
   const isCodex = provider === 'codex';
@@ -68,7 +68,7 @@ function draw(provider, state, progress) {
     ${logoGlow}
     <rect width="256" height="256" fill="#000000"/>
     ${movement}
-    ${logo(provider, 128, 128, isCodex ? 110 : 111)}
+    ${logo(provider, 128, 128, options.logoSize ?? (isCodex ? 110 : 111))}
   </svg>`;
 }
 
@@ -84,6 +84,24 @@ function drawBoth(progress, state) {
     <g transform="translate(-50 0)">${circle(48, '#a4e7d5', .15)}${arc(48, angle, sweep, '#a4e7d5', opacity, 1.3)}</g>
     <g transform="translate(50 0)">${circle(48, '#dda086', .15)}${arc(48, -angle, sweep, '#dda086', quiet ? opacity : .5 + pulse * .3, 1.3)}</g>
     ${logo('codex', 78, 128, 62)}${logo('claude', 178, 128, 62)}
+  </svg>`;
+}
+
+function drawSplit(codexState, claudeState, progress) {
+  // Both marks share one center and size. Clipping happens after each mark's
+  // tight edge glow, so neither half nor its light spills across the seam.
+  const left = draw('codex', codexState, progress, { logoSize: 136 })
+    .replaceAll('logo-glow', 'codex-split-glow');
+  const right = draw('claude', claudeState, (1.25 - progress) % 1, { logoSize: 136 })
+    .replaceAll('logo-glow', 'claude-split-glow');
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+    <defs>
+      <clipPath id="split-left"><rect x="0" y="0" width="127" height="256"/></clipPath>
+      <clipPath id="split-right"><rect x="129" y="0" width="127" height="256"/></clipPath>
+    </defs>
+    <rect width="256" height="256" fill="#000000"/>
+    <g clip-path="url(#split-left)">${left}</g>
+    <g clip-path="url(#split-right)">${right}</g>
   </svg>`;
 }
 
@@ -115,11 +133,18 @@ function build(name, drawing, { width = WIDTH, count = FRAMES, delay = DELAY } =
   console.log(`${name}: ${count} frames, ${count * delay}ms, ${(bytes.length / 1024).toFixed(0)}kb`);
 }
 
-for (const provider of ['codex', 'claude']) {
-  for (const state of ['working', 'thinking', 'waiting', 'idle']) build(`${provider}-${state}`, time => draw(provider, state, time));
+const splitOnly = process.argv.includes('--split-only');
+const splitStates = ['working', 'thinking', 'waiting'];
+if (!splitOnly) {
+  for (const provider of ['codex', 'claude']) {
+    for (const state of ['working', 'thinking', 'waiting', 'idle']) build(`${provider}-${state}`, time => draw(provider, state, time));
+  }
+  for (const state of ['working', 'thinking', 'waiting', 'idle']) build(`both-${state}`, time => drawBoth(time, state));
+  for (const action of ACTIONS) build(`action-${action}`, time => drawBadge(action, time), { width: 128, count: 48 });
 }
-for (const state of ['working', 'thinking', 'waiting', 'idle']) build(`both-${state}`, time => drawBoth(time, state));
-for (const action of ACTIONS) build(`action-${action}`, time => drawBadge(action, time), { width: 128, count: 48 });
+for (const codexState of splitStates) {
+  for (const claudeState of splitStates) build(`split-${codexState}-${claudeState}`, time => drawSplit(codexState, claudeState, time));
+}
 fs.writeFileSync(path.join(target, 'manifest.json'), JSON.stringify({
   version: 2, width: WIDTH, height: WIDTH, frames: FRAMES, frameDurationMs: DELAY,
   loopDurationMs: FRAMES * DELAY, animatedFormat: 'gif', staticFormat: 'png',
@@ -127,5 +152,6 @@ fs.writeFileSync(path.join(target, 'manifest.json'), JSON.stringify({
   providers: ['codex', 'claude'], states: ['working', 'thinking', 'waiting', 'idle'],
   combined: 'both-working', combinedStates: ['working', 'thinking', 'waiting', 'idle'], sourceVersion: 'simple-icons@14.15.0',
   actionBadges: { width: 128, height: 128, frames: 48, frameDurationMs: DELAY, loopDurationMs: 2400, actions: ACTIONS },
+  split: { pattern: 'split-{codexState}-{claudeState}', axis: 'vertical', left: 'codex', right: 'claude', states: splitStates, width: WIDTH, height: WIDTH, frames: FRAMES, frameDurationMs: DELAY, loopDurationMs: FRAMES * DELAY },
 }, null, 2) + '\n');
-if (!process.argv.includes('--assets-only')) require('./generate-overview.cjs');
+if (!splitOnly && !process.argv.includes('--assets-only')) require('./generate-overview.cjs');
