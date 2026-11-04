@@ -37,7 +37,7 @@ function createConfig(answers, existing = {}) {
   if (!['minimal', 'project'].includes(privacy)) throw new Error('privacy must be minimal or project');
   if (!['auto', 'combined', 'rotate'].includes(displayMode)) throw new Error('display mode must be auto, combined, or rotate');
   return {
-    showWhenIdle: false, showTokens: true, rotateSeconds: 20, pollIntervalMs: 2000,
+    showWhenIdle: true, showTokens: true, rotateSeconds: 20, pollIntervalMs: 2000,
     staleMs: 120000, idleRetentionMs: 600000, ...existing,
     clientId: validateClientId(answers.clientId), privacy, displayMode,
     images: { ...(existing.images || {}), baseUrl, animated: true, ...(baseUrl ? { portal: false } : {}) },

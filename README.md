@@ -8,7 +8,7 @@ fork of [telljoe/claude-discord-rpc-dist](https://github.com/telljoe/claude-disc
 
 ## run
 
-requires node.js 20+ and the discord desktop app. no npm install, api key, or bot token is needed to run.
+requires node.js 20+ and the discord desktop app. node.js 22.15+ is recommended to include compressed codex history. no npm install, api key, or bot token is needed to run.
 
 ```powershell
 git clone https://github.com/sagecsharp/codex-claude-discord-rpc.git
@@ -30,6 +30,7 @@ the installer copies this local checkout to `%LOCALAPPDATA%\CodexClaudeRPC`. it 
 
 - plain-language actions such as `codex: running tests` and `claude: editing files`.
 - both token totals on the same card when both have recent sessions.
+- when idle: both logos, all-time locally recorded tokens for each assistant, and their estimated api costs.
 - a white chatgpt knot with a mint orbit; a coral claude sun with a warm pulse.
 - four animations for each provider, plus four paired-logo animations. each is a seamless four-second, 20 fps loop.
 - distinct action badges for editing, reading, searching, testing, terminal commands, browsing, reviewing, thinking, waiting, finished, idle, and other work.
@@ -37,7 +38,7 @@ the installer copies this local checkout to `%LOCALAPPDATA%\CodexClaudeRPC`. it 
 
 `auto` follows the active provider and alternates the main logo every 20 seconds when both are active. the small badge shows the current action: a pencil for edits, a magnifier for searches, a checklist for tests, and a pause icon when waiting for you. `combined` keeps both logos in one image. `rotate` also gives recent idle providers a turn as the main logo. text keeps both providers' actions and usage visible in every mode. the discord member list uses the action line too.
 
-action text comes from a fixed vocabulary. raw commands, prompts, and tool inputs never appear on discord. fast tool results keep their action visible for up to eight seconds to avoid flicker. a finished action stays visible for `doneSeconds` (20 seconds by default), then the usual idle preference applies.
+action text comes from a fixed vocabulary. raw commands, prompts, and tool inputs never appear on discord. fast tool results keep their action visible for up to eight seconds to avoid flicker. a finished action stays visible for `doneSeconds` (20 seconds by default), then the all-time idle card appears.
 
 there is no text baked into the images. the artwork contains only logos, motion, and action pictograms on pure black; labels stay in discord's normal text fields. glow is confined to the logos, with crisp unlit action icons and orbit lines.
 
@@ -52,24 +53,31 @@ optional `config.json` overrides [config.example.json](config.example.json). it 
   "displayMode": "combined",
   "privacy": "minimal",
   "showTokens": true,
-  "showWhenIdle": false,
+  "showWhenIdle": true,
   "images": { "animated": true }
 }
 ```
 
 - `privacy`: `minimal` shows provider, state, model, and optional usage. `project` also shows the current folder's name. prompt text, commands, file contents, and full paths are never published. `hideProjects` accepts folder globs such as `client-*`.
 - `providers`: set `codex` or `claude` to false to hide that provider.
-- `showTokens`: false removes token counts. `showWhenIdle`: true retains idle cards; false clears the presence when nothing is active.
+- `showTokens`: false hides usage and cost. `showWhenIdle`: true (default) shows the all-time idle card; false clears the presence when nothing is active.
 - `images.baseUrl`: public https directory containing the bundled gifs. `images.animated: false` selects png stills. for developer portal uploads, use the png files, name keys like `codex_working`, and set `images.portal: true`.
 - `codexRoot`: custom sessions directory (default `$CODEX_HOME/sessions` or `~/.codex/sessions`). `claudeRoot`: custom claude home (default `$CLAUDE_CONFIG_DIR` or `~/.claude`).
+- `codexHistoryRoot`: custom codex home containing `sessions` and `archived_sessions`. defaults to `$CODEX_HOME`, `~/.codex`, or the parent of a custom `codexRoot`.
 
 discord supports animated images through public external urls. uploaded portal assets are static. see [discord's rich presence documentation](https://docs.discord.com/developers/discord-social-sdk/development-guides/setting-rich-presence#uploading-assets).
 
 ## usage and activity limits
 
-usage is the sum of token counters from the recent local sessions being tracked, including cached input. it is not your subscription allowance, account-wide billing, lifetime usage, or a cost estimate. `usage pending` means the local log has no counter yet; `≥` marks incomplete counters from a bounded transcript read. background and child sessions can be included when their logs are present. inherited history in forked sessions can overlap, so totals are not a billing ledger.
+while active, usage is the sum of recent local session counters, including cached input. `usage pending` means a log has no counter yet; `≥` marks incomplete counters. inherited history in active forked sessions can overlap.
 
-codex activity is inferred from local rollout events. claude uses local session metadata and transcripts, with a process-liveness check when a pid is available. no browser chat sessions are read. cloud-only sessions and compressed/archived codex logs are not tracked. local formats can change between app versions.
+when idle, a separate history index shows all-time locally recorded tokens and estimated api cost for each assistant. it scans codex sessions and archives (including `.jsonl.zst` on node 22.15+), plus claude project and subagent transcripts. stable request/message ids and cumulative-event fingerprints remove copied and repeated usage. incomplete or inferred records remain estimates, not an account-wide billing ledger. deleted history that was never indexed, cloud-only usage, and browser chats cannot be recovered.
+
+the first scan runs in a background worker. later scans run every minute, reusing unchanged files. the local `cache/lifetime-v1.json` stores usage counters and hashed file identifiers, never prompts or transcript text. previously indexed counters remain available when logs are archived or removed. stop the app and delete this cache to rebuild only from currently available files.
+
+costs use published api input, output, and cache rates for the recorded model, with current standard pricing where tier/context metadata is missing. these are hypothetical api costs, not subscription spending or a bill. unknown models and unknown cache-write lifetimes remain `unpriced`; a dollar amount followed by `+ unpriced` is only the priced subtotal. `≥` marks incomplete token coverage. no paid api calls or credentials are used to calculate these estimates. see [pricing sources and assumptions](PRICING.md); `node rpc.js --stats` shows local totals, per-model costs, and coverage.
+
+codex activity is inferred from local rollout events. claude uses local session metadata and transcripts, with a process-liveness check when a pid is available. compressed/archived codex logs contribute to lifetime usage but do not count as live activity. local formats can change between app versions.
 
 silent sessions become idle after `staleMs` (two minutes by default), including long-running tasks with no log events. sessions leave the card after `idleRetentionMs` (ten minutes). bounded reads keep large histories responsive. these limits are configurable.
 
@@ -77,12 +85,14 @@ silent sessions become idle after `staleMs` (two minutes by default), including 
 
 ```powershell
 node rpc.js --status --json
+node rpc.js --idle --status
+node rpc.js --stats
 node rpc.js --demo --status
 node --test
 node rpc.js --stop
 ```
 
-`--status` never connects to discord. `--demo` uses synthetic activity; combine it with `--status` for a local preview. `--once` publishes one real snapshot, waits for discord to acknowledge it, then clears and exits. `--log` writes a rotating local log.
+`--status` never connects to discord. add `--idle` to inspect the idle card without waiting for sessions to finish. `--demo` uses synthetic activity and usage; combine `--demo --idle --status` for a sample lifetime card. `--once` publishes one snapshot, waits for discord to acknowledge it, then clears and exits. `--log` writes a rotating local log.
 
 to remove login startup, run the installed `install-autostart.ps1 -Remove`. stop the daemon before deleting its install folder. this does not remove the original clawd installation.
 

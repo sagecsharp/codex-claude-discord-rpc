@@ -45,7 +45,7 @@ if (Test-Path -LiteralPath $destinationDirectory) {
     New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
 }
 
-$relativeFiles = @('rpc.js', 'start.vbs', 'package.json', 'package-lock.json', 'README.md', 'LICENSE', 'NOTICE', 'VERSION', 'config.example.json', 'install.ps1', 'install-autostart.ps1', 'preview.html')
+$relativeFiles = @('rpc.js', 'start.vbs', 'package.json', 'package-lock.json', 'README.md', 'PRICING.md', 'LICENSE', 'NOTICE', 'VERSION', 'config.example.json', 'install.ps1', 'install-autostart.ps1', 'preview.html')
 foreach ($directory in @('lib', 'assets', 'scripts')) {
     $folder = Join-Path $sourceDirectory $directory
     if (Test-Path -LiteralPath $folder) {

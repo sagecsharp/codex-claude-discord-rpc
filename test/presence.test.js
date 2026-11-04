@@ -6,7 +6,7 @@ const { buildActivity, summarize, asset } = require('../lib/dual-presence');
 
 const NOW = Date.parse('2026-11-03T20:00:00Z');
 function config(overrides = {}) {
-  return { ...DEFAULTS, ...overrides, providers: { ...DEFAULTS.providers, ...overrides.providers },
+  return { ...DEFAULTS, showWhenIdle: false, ...overrides, providers: { ...DEFAULTS.providers, ...overrides.providers },
     images: { ...DEFAULTS.images, baseUrl: 'https://example.com/assets', ...overrides.images } };
 }
 function session(provider, extra = {}) {
@@ -33,7 +33,7 @@ test('disabled providers are excluded from images and totals', () => {
 test('each provider status maps to a matching asset', () => {
   for (const provider of ['codex', 'claude']) for (const status of ['working', 'thinking', 'waiting', 'idle']) {
     const result = buildActivity([session(provider, { status })], config({ showWhenIdle: true }), NOW);
-    assert.equal(result.assets.large_image, `https://example.com/assets/${provider}-${status}.gif?v=1`);
+    assert.equal(result.assets.large_image, `https://example.com/assets/${status === 'idle' ? 'both' : provider}-${status}.gif?v=1`);
     assert.equal(Boolean(result.timestamps), status !== 'idle');
   }
 });
@@ -142,8 +142,9 @@ test('untrusted action labels and stale actions cannot leak or mislead', () => {
   assert.match(unknown.details, /codex: working/);
   assert.doesNotMatch(JSON.stringify(unknown), /private command|secret prompt/);
   const stale = buildActivity([session('codex', { action: 'testing', stale: true })], config({ showWhenIdle: true }), NOW);
-  assert.match(stale.details, /codex: idle/);
-  assert.match(stale.assets.small_image, /action-idle/);
+  assert.match(stale.details, /idle/);
+  assert.match(stale.assets.large_image, /both-idle/);
+  assert.equal(stale.assets.small_image, undefined);
 });
 
 test('finished remains visible briefly before clearing the presence', () => {
@@ -153,4 +154,32 @@ test('finished remains visible briefly before clearing the presence', () => {
   assert.match(result.assets.small_image, /action-done/);
   assert.equal(result.timestamps, undefined);
   assert.equal(buildActivity([completed], config(), NOW + 21000), null);
+});
+
+test('idle shows lifetime totals and prices for both providers using paired logos', () => {
+  const history = { ready: true, providers: {
+    codex: { total: 28400000, costUSD: 51.38, unpricedTokens: 0 },
+    claude: { total: 16700000, costUSD: 79.24, unpricedTokens: 0 },
+  } };
+  const cfg = config({ showWhenIdle: true });
+  const idle = buildActivity([session('codex', { status: 'idle' })], cfg, NOW, history);
+  assert.equal(idle.details, 'all-time tokens · codex 28.4m · claude 16.7m');
+  assert.equal(idle.state, 'api est. · codex $51.38 · claude $79.24');
+  assert.match(idle.assets.large_image, /both-idle/);
+  assert.equal(idle.assets.small_image, undefined);
+  assert.equal(idle.timestamps, undefined);
+  assert.doesNotMatch(idle.details, /1\.2k/);
+  history.providers.codex.unpricedTokens = 10;
+  history.providers.claude.costUSD = null;
+  const partial = buildActivity([], cfg, NOW, history);
+  assert.equal(partial.state, 'api est. · codex $51.38 + unpriced · claude unpriced');
+  assert.equal(buildActivity([], cfg, NOW).state, 'counting local history');
+  assert.equal(buildActivity([], config({ showWhenIdle: true, showTokens: false }), NOW, history).state, 'ready when you are');
+  assert.doesNotMatch(buildActivity([], config({ showWhenIdle: true, providers: { claude: false } }), NOW, history).details, /claude/);
+});
+
+test('idle is enabled by default and completed actions transition to all-time totals', () => {
+  assert.equal(DEFAULTS.showWhenIdle, true);
+  const result = buildActivity([session('codex', { status: 'idle', action: 'done', actionAt: NOW - 30000 })], config({ showWhenIdle: true }), NOW);
+  assert.equal(result.state, 'counting local history');
 });

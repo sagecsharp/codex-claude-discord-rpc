@@ -1,9 +1,11 @@
 {
   "name": "codex-claude-discord-rpc",
-  "version": "4.1.2",
+  "version": "4.2.0",
   "private": true,
   "description": "dual-provider discord presence with animated codex and claude logos",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node rpc.js",
     "setup": "node scripts/setup.js",
@@ -12,5 +14,8 @@
     "test": "node --test",
     "assets": "node scripts/generate-assets.cjs"
   },
-  "devDependencies": { "@resvg/resvg-js": "2.6.2", "gifenc": "1.0.3" }
+  "devDependencies": {
+    "@resvg/resvg-js": "2.6.2",
+    "gifenc": "1.0.3"
+  }
 }
