@@ -13,16 +13,18 @@
     .gallery{display:grid;grid-template-columns:1fr 1fr;gap:16px}.card{border:1px solid #2a2d2d;border-radius:18px;overflow:hidden;background:#000}.card-head{display:flex;justify-content:space-between;align-items:center;padding:24px 26px 0}.label{font-size:13px;font-weight:500;letter-spacing:.01em}.number{font:10px ui-monospace,monospace;letter-spacing:.08em;color:#67726c}.canvas{position:relative;height:290px;display:grid;place-items:center;overflow:hidden}.canvas img{width:256px;height:256px}.canvas .big-action{position:absolute;width:60px;height:60px;left:calc(50% + 76px);top:211px;border:4px solid #000;border-radius:50%}.card-foot{display:flex;align-items:center;justify-content:space-between;border-top:1px solid #262b28;margin:0 26px;padding:19px 0 21px;gap:12px}.foot-title{font-size:12px;color:#bdc4bf}.foot-meta{font:10px ui-monospace,monospace;color:#748078;letter-spacing:.03em}.swatch{display:inline-block;height:6px;width:6px;margin-right:7px;background:#a4e7d5;border-radius:50%}.warm{background:#dda086}
     .action-panel{margin-bottom:20px;padding:18px;border:1px solid #272e29;border-radius:14px;background:#000}.action-picker{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-top:13px}.action-picker button{display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid transparent;background:transparent;border-radius:8px;font:inherit;font-size:11px;color:#94a297;cursor:pointer}.action-picker img{width:27px;height:27px;border-radius:50%}.action-picker button:hover,.action-picker button[aria-pressed="true"]{background:#000;border-color:#415146;color:#e4ece5}.badge-wrap{position:relative;flex-shrink:0;width:66px;height:66px}.badge-wrap .action-badge{position:absolute;right:-7px;bottom:-5px;width:32px;height:32px;border-radius:50%;border:3px solid #000}.actual-size{display:flex;gap:9px;align-items:center;margin-top:15px;font-size:11px;color:#788c7c}.actual-size img{width:32px;height:32px;border-radius:50%}
     .bottom{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.example{border:1px solid #272b29;border-radius:15px;padding:25px 26px;background:#000}.caption{font:10px ui-monospace,monospace;color:#717d75;text-transform:uppercase;letter-spacing:.1em}.presence{display:flex;gap:17px;margin-top:19px;align-items:center}.presence-img{width:66px;height:66px;border-radius:12px}.presence strong{display:block;font-size:13px;font-weight:600;line-height:1.8}.presence p{color:#a6aea9;margin:1px 0;font-size:12px;line-height:1.6}.presence small{color:#79867c;font:10px ui-monospace,monospace}.notes{padding:25px 26px;border:1px solid #272b29;border-radius:15px;background:#000}.notes p{font-size:13px;color:#929d95;line-height:1.75;margin:14px 0 0;max-width:380px}.notes .sub{font-size:11px;color:#6e7971;margin-top:12px}footer{display:flex;justify-content:space-between;gap:16px;margin-top:35px;font:10px ui-monospace,monospace;color:#5f6b62;line-height:1.7}a{color:#8e9e93;text-decoration:none}a:hover{text-decoration:underline}
+    .split-panel{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:24px;margin:0 0 20px;padding:24px;border:1px solid #343d36;border-radius:18px}.split-panel>img{width:256px;height:256px;justify-self:center}.split-panel h2{font-size:25px;letter-spacing:-.03em;font-weight:450;margin:14px 0}.split-panel p{font-size:13px;line-height:1.7;color:#8e9b92;max-width:350px}.split-controls{display:flex;gap:14px;margin-top:18px;flex-wrap:wrap}.split-controls label{display:grid;gap:8px;font-size:11px;color:#a4b0a7}.split-controls select{background:#000;color:#dbe4dc;border:1px solid #3d4b40;border-radius:7px;padding:8px 12px;font:inherit;font-size:12px}.split-controls select:focus-visible{outline:2px solid #a4e7d5;outline-offset:3px}
+    @media(max-width:640px){.split-panel{grid-template-columns:1fr}.split-panel>img{grid-row:1}.split-panel{padding:20px}}
     @media(max-width:640px){main{padding:28px 18px}header{margin-bottom:48px}.gallery,.bottom{grid-template-columns:1fr}.toolbar{margin-top:26px}.segmented button{padding:8px 12px}.canvas{height:290px}.action-picker{grid-template-columns:repeat(3,1fr)}footer{flex-direction:column}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important}}
   </style>
 </head>
 <body>
 <main>
-  <header><div class="wordmark"><span class="signal" aria-hidden="true"><i></i><i></i><i></i><i></i></span>dual presence</div><span class="version">action study / 02</span></header>
+  <header><div class="wordmark"><span class="signal" aria-hidden="true"><i></i><i></i><i></i><i></i></span>dual presence</div><span class="version">split presence / 03</span></header>
   <div class="eyebrow">codex + claude for discord</div>
   <h1>see what’s happening.<br><span>at a glance.</span></h1>
-  <p class="intro">the logo tells you which assistant.<br>pure black backgrounds. glow only on the logos.</p>
+  <p class="intro">both assistants active, both halves visible.<br>pure black backgrounds. glow only on the logos.</p>
   <div class="toolbar">
     <div class="segmented" aria-label="activity state">
       <button type="button" data-state="working" aria-pressed="true">working</button><button type="button" data-state="thinking" aria-pressed="false">thinking</button><button type="button" data-state="waiting" aria-pressed="false">waiting</button><button type="button" data-state="idle" aria-pressed="false">idle</button>
@@ -30,6 +32,7 @@
     <button type="button" class="motion" aria-pressed="false" id="motion">pause motion</button>
   </div>
   <section class="action-panel" aria-label="choose an action"><div class="caption">what it’s doing</div><div class="action-picker" id="actions"></div></section>
+  <section class="split-panel" aria-label="split logo preview"><div><div class="caption">when both are active</div><h2>one image. both assistants.</h2><p>chatgpt on the left. claude on the right. each half keeps its own motion. the idle card keeps the two full logos.</p><div class="split-controls"><label for="split-codex-state">codex / left<select id="split-codex-state"><option value="working">working</option><option value="thinking">thinking</option><option value="waiting">waiting</option></select></label><label for="split-claude-state">claude / right<select id="split-claude-state"><option value="working">working</option><option value="thinking">thinking</option><option value="waiting">waiting</option></select></label></div></div><img id="split-preview" src="split-working-working.gif" width="256" height="256" alt="left half chatgpt logo and right half claude logo"></section>
   <section class="gallery" aria-label="assistant animations">
     <article class="card"><div class="card-head"><span class="label">codex</span><span class="number">01 / orbit</span></div><div class="canvas"><img id="codex" src="codex-working.gif" alt="chatgpt logo with a slow mint orbit" width="256" height="256"><img class="big-action" data-action-image src="action-editing.gif" alt="editing code"></div><div class="card-foot"><span class="foot-title"><i class="swatch"></i><span id="codex-desc">editing code</span></span><span class="foot-meta">logo + action badge</span></div></article>
     <article class="card"><div class="card-head"><span class="label">claude</span><span class="number">02 / radiance</span></div><div class="canvas"><img id="claude" src="claude-working.gif" alt="claude sun logo with a warm traveling radiance" width="256" height="256"><img class="big-action" data-action-image src="action-editing.gif" alt="editing code"></div><div class="card-foot"><span class="foot-title"><i class="swatch warm"></i><span id="claude-desc">editing code</span></span><span class="foot-meta">logo + action badge</span></div></article>
@@ -43,8 +46,9 @@
 <script>
   const media = window.matchMedia('(prefers-reduced-motion: reduce)');
   let paused = media.matches;
-  let state = 'idle';
-  let action = 'idle';
+  let state = 'working';
+  let action = 'working';
+  const splitStates = { codex: 'working', claude: 'working' };
   const actions = {
     working: 'working', thinking: 'thinking', editing: 'editing code', reading: 'reading files',
     searching: 'searching code', testing: 'running tests', terminal: 'running commands',
@@ -60,18 +64,26 @@
     image.alt = '';
     button.append(image, document.createTextNode(name));
     button.setAttribute('aria-label', label);
-    button.addEventListener('click', () => { action = name; state = ['thinking', 'waiting', 'idle'].includes(action) ? action : action === 'done' ? 'idle' : 'working'; render(); });
+    button.addEventListener('click', () => { action = name; state = ['thinking', 'waiting', 'idle'].includes(action) ? action : action === 'done' ? 'idle' : 'working'; if (state !== 'idle') splitStates.codex = splitStates.claude = state; render(); });
     document.getElementById('actions').append(button);
   }
   function render() {
     const extension = paused ? 'png' : 'gif';
     for (const provider of ['codex', 'claude']) {
-      document.getElementById(provider).src = `${provider}-${state}.${extension}`;
-      document.getElementById(`${provider}-desc`).textContent = actions[action];
+      const providerState = state === 'idle' ? 'idle' : splitStates[provider];
+      document.getElementById(provider).src = `${provider}-${providerState}.${extension}`;
+      document.getElementById(`${provider}-desc`).textContent = providerState === state ? actions[action] : actions[providerState];
+      document.getElementById(`split-${provider}-state`).value = splitStates[provider];
     }
-    document.getElementById('both').src = `both-${state}.${extension}`;
+    const splitName = `split-${splitStates.codex}-${splitStates.claude}`;
+    document.getElementById('split-preview').src = `${splitName}.${extension}`;
+    document.getElementById('both').src = `${state === 'idle' ? 'both-idle' : splitName}.${extension}`;
     const idle = action === 'idle';
-    document.getElementById('status-line').textContent = idle ? 'all-time tokens · codex 28.4m · claude 16.7m' : actions[action];
+    const activityLabels = ['codex', 'claude'].map(provider => {
+      const providerState = state === 'idle' ? 'idle' : splitStates[provider];
+      return `${provider}: ${providerState === state ? actions[action] : actions[providerState]}`;
+    });
+    document.getElementById('status-line').textContent = idle ? 'all-time tokens · codex 28.4m · claude 16.7m' : activityLabels.join(' · ');
     document.getElementById('usage-line').textContent = idle ? 'api est. · codex $51.38 · claude $79.24' : 'codex 12.4k · claude 8.2k tokens';
     document.getElementById('usage-caption').textContent = `${idle ? 'local history' : 'session usage'} · example data`;
     document.querySelector('.action-badge').hidden = idle;
@@ -83,7 +95,8 @@
     button.setAttribute('aria-pressed', String(paused));
     document.querySelectorAll('[data-state]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.state === state)));
   }
-  document.querySelectorAll('[data-state]').forEach(button => button.addEventListener('click', () => { state = button.dataset.state; action = state; render(); }));
+  document.querySelectorAll('[data-state]').forEach(button => button.addEventListener('click', () => { state = button.dataset.state; action = state; if (state !== 'idle') splitStates.codex = splitStates.claude = state; render(); }));
+  for (const provider of ['codex', 'claude']) document.getElementById(`split-${provider}-state`).addEventListener('change', event => { splitStates[provider] = event.target.value; state = ['working', 'thinking', 'waiting'].find(candidate => Object.values(splitStates).includes(candidate)); action = state; render(); });
   document.getElementById('motion').addEventListener('click', () => { paused = !paused; render(); });
   media.addEventListener('change', event => { paused = event.matches; render(); });
   render();

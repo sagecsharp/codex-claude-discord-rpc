@@ -21,7 +21,8 @@ regenerate
   npm install --save-dev @resvg/resvg-js gifenc
   node scripts/generate-assets.cjs
 
-the twelve brand animations are 256 x 256 pixels, 80 frames, 50ms per frame,
+the twelve full-logo animations and nine split-logo animations are
+256 x 256 pixels, 80 frames, 50ms per frame,
 and loop indefinitely every four seconds. the twelve action badges are
 128 x 128 pixels, 48 frames, 50ms per frame, and loop every 2.4 seconds.
 all action pictograms are original vector drawings. the discord image assets
@@ -29,6 +30,9 @@ contain no text: only the brand logos, motion, and separate action pictograms.
 action badges stay bold enough for a 32px thumbnail. action wording belongs
 in the discord text fields, not inside the images.
 png files are static fallbacks.
+the split variants clip the chatgpt mark to the left half and claude to the
+right half, with independently animated working, thinking, and waiting states.
+regenerate only these variants with node scripts/generate-assets.cjs --split-only.
 all discord image backgrounds are fully opaque pure black, including corners.
 a faint 1.2px edge glow is confined to the brand logo silhouettes. orbit lines
 and action pictograms have no blur, ambient gradients, or colored backdrop fills.
