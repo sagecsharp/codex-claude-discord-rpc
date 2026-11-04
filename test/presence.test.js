@@ -17,7 +17,7 @@ function session(provider, extra = {}) {
 test('active provider takes the large image while both usage totals remain visible', () => {
   const result = buildActivity([session('codex'), session('claude', { status: 'idle', tokens: { total: 5600 } })], config(), NOW);
   assert.match(result.assets.large_image, /codex-working\.gif/);
-  assert.match(result.assets.small_image, /claude-idle\.gif/);
+  assert.match(result.assets.small_image, /action-working\.gif/);
   assert.match(result.state, /codex 1\.2k/);
   assert.match(result.state, /claude 5\.6k/);
   assert.match(result.details, /codex: working · claude: idle/);
@@ -25,9 +25,9 @@ test('active provider takes the large image while both usage totals remain visib
 
 test('disabled providers are excluded from images and totals', () => {
   const result = buildActivity([session('codex'), session('claude')], config({ providers: { claude: false } }), NOW);
-  assert.match(result.details, /^codex · working/);
+  assert.match(result.details, /^codex: working/);
   assert.doesNotMatch(result.state, /claude/);
-  assert.equal(result.assets.small_image, undefined);
+  assert.match(result.assets.small_image, /action-working\.gif/);
 });
 
 test('each provider status maps to a matching asset', () => {
@@ -127,4 +127,30 @@ test('static assets, portal keys, text only and hidden token totals remain usabl
   const result = buildActivity([session('codex')], config({ images: { baseUrl: '' }, showTokens: false }), NOW);
   assert.equal(result.assets, undefined);
   assert.equal(result.state, '1 recent session');
+});
+
+test('specific actions lead the card and select a matching visual badge', () => {
+  const result = buildActivity([session('codex', { action: 'testing' }), session('claude', { action: 'editing' })], config(), NOW);
+  assert.equal(result.details, 'codex: running tests · claude: editing files');
+  assert.equal(result.status_display_type, 2);
+  assert.match(result.assets.small_image, /action-(?:testing|editing)\.gif/);
+  assert.match(result.state, /codex 1\.2k · claude 1\.2k/);
+});
+
+test('untrusted action labels and stale actions cannot leak or mislead', () => {
+  const unknown = buildActivity([session('codex', { action: 'private command', actionLabel: 'secret prompt' })], config(), NOW);
+  assert.match(unknown.details, /codex: working/);
+  assert.doesNotMatch(JSON.stringify(unknown), /private command|secret prompt/);
+  const stale = buildActivity([session('codex', { action: 'testing', stale: true })], config({ showWhenIdle: true }), NOW);
+  assert.match(stale.details, /codex: idle/);
+  assert.match(stale.assets.small_image, /action-idle/);
+});
+
+test('finished remains visible briefly before clearing the presence', () => {
+  const completed = session('codex', { action: 'done', status: 'idle', actionAt: NOW - 1000 });
+  const result = buildActivity([completed], config(), NOW);
+  assert.match(result.details, /codex: finished/);
+  assert.match(result.assets.small_image, /action-done/);
+  assert.equal(result.timestamps, undefined);
+  assert.equal(buildActivity([completed], config(), NOW + 21000), null);
 });

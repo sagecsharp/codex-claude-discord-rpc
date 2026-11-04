@@ -7,6 +7,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Resvg } = require('@resvg/resvg-js');
 const { GIFEncoder, quantize, applyPalette } = require('gifenc');
+const { ACTIONS, COLORS, icon, drawBadge } = require('./action-art.cjs');
 
 const target = path.resolve(__dirname, '../assets');
 const WIDTH = 256;
@@ -26,6 +27,18 @@ const arc = (radius, start, length, color, opacity = 1, width = 1.7) => {
   return `<path d="M${n(128 + radius * Math.cos(radians))} ${n(128 + radius * Math.sin(radians))} A${radius} ${radius} 0 ${length > 180 ? 1 : 0} 1 ${n(128 + radius * Math.cos(end))} ${n(128 + radius * Math.sin(end))}" fill="none" stroke="${color}" stroke-opacity="${n(opacity)}" stroke-width="${width}" stroke-linecap="round"/>`;
 };
 const logo = (provider, x = 128, y = 128, size = 108) => `<g transform="translate(${x - size / 2} ${y - size / 2}) scale(${size / 24})"><path d="${paths[provider === 'codex' ? 'chatgpt' : 'claude']}" fill="${provider === 'codex' ? '#f5f6f6' : '#da947b'}"/></g>`;
+
+// Rasterize the four text labels once, rather than loading fonts for every frame.
+const stateLabels = Object.fromEntries(['working', 'thinking', 'waiting', 'idle'].map(state => {
+  const label = state === 'idle' ? 'ready' : state;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="38"><text x="64" y="27" text-anchor="middle" font-family="Arial, sans-serif" font-size="23" font-weight="600" fill="${COLORS[state]}">${label}</text></svg>`;
+  return [state, new Resvg(svg).render().asPng().toString('base64')];
+}));
+function statusPill(state, progress) {
+  return `<rect x="41" y="200" width="174" height="39" rx="19.5" fill="#101617" stroke="${COLORS[state]}" stroke-opacity=".3"/>
+    <g transform="translate(52 208) scale(.18)" fill="none" stroke="${COLORS[state]}" color="${COLORS[state]}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">${icon(state, progress)}</g>
+    <image href="data:image/png;base64,${stateLabels[state]}" x="76" y="200" width="128" height="38"/>`;
+}
 
 function draw(provider, state, progress) {
   const phase = TAU * progress;
@@ -58,12 +71,6 @@ function draw(provider, state, progress) {
     }
     movement += circle(101 + pulse * 2, accent, (quiet ? .025 : .07) + pulse * .06, .6);
   }
-  if (state === 'waiting') {
-    for (let i = 0; i < 3; i++) {
-      const opacity = .22 + .55 * (Math.sin(phase - i * .65) + 1) / 2;
-      movement += `<circle cx="${120 + i * 8}" cy="207" r="1.7" fill="${accent}" opacity="${n(opacity)}"/>`;
-    }
-  }
   return `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
     <defs>
       <radialGradient id="ambient"><stop offset="0" stop-color="${accent}" stop-opacity="${n((quiet ? .045 : .065) + pulse * .025)}"/><stop offset="1" stop-color="${accent}" stop-opacity="0"/></radialGradient>
@@ -74,6 +81,7 @@ function draw(provider, state, progress) {
     <circle cx="128" cy="128" r="118" fill="url(#ambient)"/>
     ${movement}
     ${logo(provider, 128, 128, isCodex ? 110 : 111)}
+    ${statusPill(state, progress)}
   </svg>`;
 }
 
@@ -90,38 +98,40 @@ function drawBoth(progress, state) {
     <g transform="translate(-50 0)">${circle(48, '#a4e7d5', .15)}${arc(48, angle, sweep, '#a4e7d5', opacity, 1.3)}</g>
     <g transform="translate(50 0)">${circle(48, '#dda086', .15)}${arc(48, -angle, sweep, '#dda086', quiet ? opacity : .5 + pulse * .3, 1.3)}</g>
     ${logo('codex', 78, 128, 62)}${logo('claude', 178, 128, 62)}
-    <circle cx="${state === 'waiting' ? 120 : 123}" cy="210" r="1.5" fill="#a4e7d5" opacity="${n(.4 + pulse * .4)}"/><circle cx="${state === 'waiting' ? 136 : 133}" cy="210" r="1.5" fill="#dda086" opacity="${n(.8 - pulse * .4)}"/>${state === 'waiting' ? `<circle cx="128" cy="210" r="1.5" fill="#d8ded8" opacity="${n(.3 + pulse * .3)}"/>` : ''}
+    ${statusPill(state, progress)}
   </svg>`;
 }
 
-function build(name, drawing) {
+function build(name, drawing, { width = WIDTH, count = FRAMES, delay = DELAY } = {}) {
   const frames = [];
-  for (let index = 0; index < FRAMES; index++) {
-    const rendered = new Resvg(drawing(index / FRAMES), { font: { loadSystemFonts: false } }).render();
+  for (let index = 0; index < count; index++) {
+    const rendered = new Resvg(drawing(index / count), { font: { loadSystemFonts: false } }).render();
     if (index === 0) fs.writeFileSync(path.join(target, `${name}.png`), rendered.asPng());
     frames.push(rendered.pixels);
   }
   // One palette per loop keeps gradients and static logo edges from flickering.
-  const samples = Buffer.concat([frames[0], frames[20], frames[40], frames[60]]);
+  const samples = Buffer.concat([0, 1, 2, 3].map(quarter => frames[Math.floor(count * quarter / 4)]));
   const palette = quantize(samples, 256, { format: 'rgb565' });
   const gif = GIFEncoder();
-  frames.forEach((rgba, index) => gif.writeFrame(applyPalette(rgba, palette), WIDTH, WIDTH, {
-    ...(index === 0 ? { palette } : {}), delay: DELAY, repeat: 0, dispose: 1,
+  frames.forEach((rgba, index) => gif.writeFrame(applyPalette(rgba, palette), width, width, {
+    ...(index === 0 ? { palette } : {}), delay, repeat: 0, dispose: 1,
   }));
   gif.finish();
   const bytes = gif.bytes();
   fs.writeFileSync(path.join(target, `${name}.gif`), bytes);
-  console.log(`${name}: ${FRAMES} frames, ${FRAMES * DELAY}ms, ${(bytes.length / 1024).toFixed(0)}kb`);
+  console.log(`${name}: ${count} frames, ${count * delay}ms, ${(bytes.length / 1024).toFixed(0)}kb`);
 }
 
 for (const provider of ['codex', 'claude']) {
   for (const state of ['working', 'thinking', 'waiting', 'idle']) build(`${provider}-${state}`, time => draw(provider, state, time));
 }
 for (const state of ['working', 'thinking', 'waiting', 'idle']) build(`both-${state}`, time => drawBoth(time, state));
+for (const action of ACTIONS) build(`action-${action}`, time => drawBadge(action, time), { width: 128, count: 48 });
 fs.writeFileSync(path.join(target, 'manifest.json'), JSON.stringify({
-  version: 1, width: WIDTH, height: WIDTH, frames: FRAMES, frameDurationMs: DELAY,
+  version: 2, width: WIDTH, height: WIDTH, frames: FRAMES, frameDurationMs: DELAY,
   loopDurationMs: FRAMES * DELAY, animatedFormat: 'gif', staticFormat: 'png',
   providers: ['codex', 'claude'], states: ['working', 'thinking', 'waiting', 'idle'],
   combined: 'both-working', combinedStates: ['working', 'thinking', 'waiting', 'idle'], sourceVersion: 'simple-icons@14.15.0',
+  actionBadges: { width: 128, height: 128, frames: 48, frameDurationMs: DELAY, loopDurationMs: 2400, actions: ACTIONS },
 }, null, 2) + '\n');
 require('./generate-overview.cjs');

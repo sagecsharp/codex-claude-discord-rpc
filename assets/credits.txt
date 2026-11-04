@@ -21,8 +21,13 @@ regenerate
   npm install --save-dev @resvg/resvg-js gifenc
   node scripts/generate-assets.cjs
 
-all twelve animations are 256 x 256 pixels, 80 frames, 50ms per frame,
-and loop indefinitely every four seconds. png files are static fallbacks.
+the twelve brand animations are 256 x 256 pixels, 80 frames, 50ms per frame,
+and loop indefinitely every four seconds. the twelve action badges are
+128 x 128 pixels, 48 frames, 50ms per frame, and loop every 2.4 seconds.
+all action pictograms are original vector drawings. the brand images show a
+short state label; the action badges stay bold enough for a 32px thumbnail.
+the idle brand state reads "ready" so a just-finished action is also clear.
+png files are static fallbacks.
 each animated file uses a single palette across the whole loop to avoid color flicker.
 gif assets need public https hosting for discord; local file paths do not work in rich presence.
 the preview includes a pause control and honors the system reduced-motion preference.

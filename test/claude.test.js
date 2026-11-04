@@ -144,3 +144,42 @@ test('missing Claude installation returns an empty list', (t) => {
   const f = fixture(t);
   assert.deepEqual(new ClaudeReader({ root: path.join(f.root, 'not-installed') }).read(), []);
 });
+
+test('claude tool actions are specific, safe, and held through brief thinking transitions', (t) => {
+  let now = NOW;
+  const f = fixture(t, { now: () => now }); f.meta();
+  f.log([assistant('m1', {}, { content: [{ type: 'tool_use', id: 'read-1', name: 'Read', input: { file_path: '/private/secret.txt' } }] })]);
+  const first = f.reader.read()[0];
+  assert.equal(first.action, 'reading');
+  assert.equal(first.actionLabel, 'reading files');
+  f.log([{ type: 'user', timestamp: new Date(NOW).toISOString(), message: { content: [{ type: 'tool_result', tool_use_id: 'read-1', content: 'private contents' }] } }], 'session-1', true);
+  const held = f.reader.read()[0];
+  assert.equal(held.action, 'reading');
+  assert.equal(held.actionAt, first.actionAt);
+  assert.ok(!JSON.stringify(held).includes('private'));
+  now += 8000;
+  assert.equal(f.reader.read()[0].action, 'thinking');
+  f.log([{ ...assistant('m2', {}, { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'dotnet test private.sln' } }] }), timestamp: new Date(now).toISOString() }], 'session-1', true);
+  assert.equal(f.reader.read()[0].action, 'testing');
+});
+
+test('claude waits for the matching answer and marks completed work finished', (t) => {
+  const f = fixture(t); f.meta();
+  f.log([assistant('m1', {}, { content: [{ type: 'tool_use', id: 'ask-1', name: 'AskUserQuestion', input: { question: 'private question' } }] })]);
+  assert.equal(f.reader.read()[0].action, 'waiting');
+  f.log([{ type: 'user', timestamp: new Date(NOW).toISOString(), message: { content: [{ type: 'tool_result', tool_use_id: 'unrelated' }] } }], 'session-1', true);
+  assert.equal(f.reader.read()[0].action, 'waiting');
+  f.log([{ type: 'user', timestamp: new Date(NOW).toISOString(), message: { content: [{ type: 'tool_result', tool_use_id: 'ask-1', content: 'private answer' }] } }], 'session-1', true);
+  assert.equal(f.reader.read()[0].action, 'thinking');
+  f.log([{ ...assistant('m2', {}, { stop_reason: 'end_turn', content: [{ type: 'text', text: 'private answer' }] }), timestamp: new Date(NOW).toISOString() }], 'session-1', true);
+  f.meta('session-1', { status: 'idle', updatedAt: NOW });
+  assert.equal(f.reader.read()[0].action, 'done');
+});
+
+test('metadata waiting and idle states override old action details', (t) => {
+  const f = fixture(t); f.meta('session-1', { status: 'waiting' });
+  f.log([assistant('m1', {}, { content: [{ type: 'tool_use', name: 'Edit', input: { file_path: '/private/file' } }] })]);
+  assert.equal(f.reader.read()[0].action, 'waiting');
+  f.meta('session-1', { status: 'idle' });
+  assert.equal(f.reader.read()[0].action, 'idle');
+});
