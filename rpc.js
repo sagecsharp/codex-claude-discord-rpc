@@ -48,8 +48,8 @@ async function main() {
   const snapshot = () => {
     const now = Date.now();
     const sessions = has('--demo') ? [
-      { provider: 'codex', sessionId: 'demo-codex', model: 'codex', status: 'working', updatedAt: now, startedAt: demoStart - 240000, tokens: { total: 28400 }, hasUsage: true },
-      { provider: 'claude', sessionId: 'demo-claude', model: 'claude', status: 'thinking', updatedAt: now, startedAt: demoStart - 360000, tokens: { total: 16700 }, usageComplete: true },
+      { provider: 'codex', sessionId: 'demo-codex', model: 'codex', status: 'working', action: 'testing', updatedAt: now, startedAt: demoStart - 240000, tokens: { total: 28400 }, hasUsage: true },
+      { provider: 'claude', sessionId: 'demo-claude', model: 'claude', status: 'working', action: 'editing', updatedAt: now, startedAt: demoStart - 360000, tokens: { total: 16700 }, usageComplete: true },
     ] : [...(cfg.providers.codex ? codex.read() : []), ...(cfg.providers.claude ? claude.read() : [])];
     return buildActivity(sessions, cfg, now);
   };
@@ -80,7 +80,7 @@ async function main() {
   }
   function start() {
     ipc = new DiscordIPC(cfg.clientId, log);
-    let delay = 2000, last = '';
+    let delay = 2000, last = '', accepted = false;
     const publish = () => {
       if (closing) return;
       try {
@@ -93,11 +93,15 @@ async function main() {
     ipc.onReady = () => { delay = 2000; log('connected to discord'); publish(); };
     ipc.onClose = (err) => {
       if (closing) return;
+      accepted = false;
       log(`${err.message}; retrying in ${delay / 1000}s`);
       clearTimeout(retry); retry = setTimeout(() => ipc.connect(), delay);
       delay = Math.min(60000, delay * 2);
     };
-    ipc.onActivity = () => { if (has('--once')) { log('discord accepted the activity; clearing preview'); shutdown(0); } };
+    ipc.onActivity = () => {
+      if (!accepted) { accepted = true; log('discord accepted the presence'); }
+      if (has('--once')) { log('clearing preview'); shutdown(0); }
+    };
     ipc.onReject = (err) => { if (has('--once')) { log(`discord rejected the activity: ${err.message}`); shutdown(1); } };
     poll = setInterval(publish, cfg.pollIntervalMs);
     if (has('--once')) onceTimeout = setTimeout(() => { log('no accepted update within 20 seconds'); shutdown(1); }, 20000);

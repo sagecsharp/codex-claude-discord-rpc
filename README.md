@@ -28,13 +28,16 @@ the installer copies this local checkout to `%LOCALAPPDATA%\CodexClaudeRPC`. it 
 
 ## what it shows
 
-- codex and claude working, thinking, waiting, or idle states.
+- plain-language actions such as `codex: running tests` and `claude: editing files`.
 - both token totals on the same card when both have recent sessions.
 - a white chatgpt knot with a mint orbit; a coral claude sun with a warm pulse.
 - four animations for each provider, plus four paired-logo animations. each is a seamless four-second, 20 fps loop.
+- distinct action badges for editing, reading, searching, testing, terminal commands, browsing, reviewing, thinking, waiting, finished, idle, and other work.
 - an elapsed timer and an optional project folder name.
 
-`auto` follows the active provider and alternates the main logo every 20 seconds when both are active. the other provider stays visible as the small badge. `combined` keeps both logos in one image. `rotate` also gives recent idle providers a turn as the main logo. text keeps both providers' usage visible in every mode.
+`auto` follows the active provider and alternates the main logo every 20 seconds when both are active. the small badge shows the current action: a pencil for edits, a magnifier for searches, a checklist for tests, and a pause icon when waiting for you. `combined` keeps both logos in one image. `rotate` also gives recent idle providers a turn as the main logo. text keeps both providers' actions and usage visible in every mode. the discord member list uses the action line too.
+
+action text comes from a fixed vocabulary. raw commands, prompts, and tool inputs never appear on discord. fast tool results keep their action visible for up to eight seconds to avoid flicker. a finished action stays visible for `doneSeconds` (20 seconds by default), then the usual idle preference applies.
 
 open [the interactive animation preview](assets/preview.html) from your local checkout to compare states and pause motion. github displays the html source; download or clone first.
 

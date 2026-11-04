@@ -146,3 +146,51 @@ test('invalid start timestamps fall back to the event, future events do not show
   fs.appendFileSync(f.file, JSON.stringify({ timestamp: '2100-01-01T00:00:00Z', type: 'event_msg', payload: { type: 'task_started' } }) + '\n');
   assert.deepEqual(f.reader.read(), []);
 });
+
+test('action labels identify orchestration work and retain it briefly after tool output', t => {
+  const f = fixture(t);
+  f.append('event_msg', { type: 'task_started' });
+  f.append('response_item', { type: 'custom_tool_call', name: 'functions.exec', call_id: 'tests-1', input: 'await tools.exec_command({cmd: "npm test -- private-tests"});' }, 1);
+  let state = f.reader.read()[0];
+  assert.equal(state.action, 'testing');
+  assert.equal(state.actionLabel, 'running tests');
+  const started = state.actionAt;
+  f.append('response_item', { type: 'custom_tool_call_output', call_id: 'tests-1', output: 'private result' }, 1);
+  f.append('response_item', { type: 'reasoning', summary: 'private reasoning' }, 1);
+  state = f.reader.read()[0];
+  assert.equal(state.action, 'testing');
+  assert.equal(state.actionAt, started);
+  assert.ok(!JSON.stringify(state).includes('private'));
+  f.advance(8000);
+  assert.equal(f.reader.read()[0].action, 'thinking');
+  f.append('response_item', { type: 'custom_tool_call', name: 'apply_patch', input: 'private patch' }, 1);
+  assert.equal(f.reader.read()[0].action, 'editing');
+  f.append('event_msg', { type: 'task_complete' }, 1);
+  assert.equal(f.reader.read()[0].action, 'done');
+  f.advance(120001);
+  assert.equal(f.reader.read()[0].action, 'idle');
+});
+
+test('asynchronous questions survive their acknowledgement until the user responds', t => {
+  const f = fixture(t);
+  f.append('response_item', { type: 'function_call', name: 'functions.request_user_input_async', call_id: 'question-1', arguments: '{}' });
+  f.append('response_item', { type: 'function_call_output', call_id: 'question-1', output: '{"accepted":true}' }, 1);
+  f.append('response_item', { type: 'reasoning' }, 1);
+  assert.equal(f.reader.read()[0].action, 'waiting');
+  assert.equal(f.reader.read()[0].status, 'waiting');
+  f.append('event_msg', { type: 'user_message', message: 'private response' }, 1);
+  assert.equal(f.reader.read()[0].action, 'thinking');
+});
+
+test('synchronous questions wait for matching tool results and meaningful tools replace actions immediately', t => {
+  const f = fixture(t);
+  f.append('response_item', { type: 'function_call', name: 'functions.request_user_input', call_id: 'question-1', arguments: '{}' });
+  f.append('response_item', { type: 'function_call_output', call_id: 'unrelated', output: 'private' }, 1);
+  assert.equal(f.reader.read()[0].action, 'waiting');
+  f.append('response_item', { type: 'function_call_output', call_id: 'question-1', output: 'private answer' }, 1);
+  assert.equal(f.reader.read()[0].action, 'thinking');
+  f.append('response_item', { type: 'function_call', name: 'tools.exec_command', arguments: JSON.stringify({ cmd: 'Get-Content private.txt' }) }, 1);
+  assert.equal(f.reader.read()[0].action, 'reading');
+  f.append('response_item', { type: 'function_call', name: 'tools.exec_command', arguments: JSON.stringify({ cmd: 'git diff --check' }) }, 1);
+  assert.equal(f.reader.read()[0].action, 'reviewing');
+});

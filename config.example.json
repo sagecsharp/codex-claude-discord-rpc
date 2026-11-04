@@ -11,6 +11,7 @@
   "pollIntervalMs": 2000,
   "staleMs": 120000,
   "idleRetentionMs": 600000,
-  "images": { "baseUrl": "https://raw.githubusercontent.com/sagecsharp/codex-claude-discord-rpc/main/assets", "animated": true, "portal": false, "version": "1" },
+  "doneSeconds": 20,
+  "images": { "baseUrl": "https://raw.githubusercontent.com/sagecsharp/codex-claude-discord-rpc/main/assets", "animated": true, "portal": false, "version": "2" },
   "buttons": []
 }

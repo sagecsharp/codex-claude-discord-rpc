@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "width": 256,
   "height": 256,
   "frames": 80,
@@ -24,5 +24,26 @@
     "waiting",
     "idle"
   ],
-  "sourceVersion": "simple-icons@14.15.0"
+  "sourceVersion": "simple-icons@14.15.0",
+  "actionBadges": {
+    "width": 128,
+    "height": 128,
+    "frames": 48,
+    "frameDurationMs": 50,
+    "loopDurationMs": 2400,
+    "actions": [
+      "working",
+      "thinking",
+      "editing",
+      "reading",
+      "searching",
+      "testing",
+      "terminal",
+      "browsing",
+      "reviewing",
+      "waiting",
+      "done",
+      "idle"
+    ]
+  }
 }
