@@ -96,3 +96,6 @@ npm run assets
 ```
 
 source vectors and their attribution are in [assets/credits.txt](assets/credits.txt). the logos identify the products; this project is not affiliated with openai or anthropic. see [license](LICENSE) and [notice](NOTICE).
+
+
+this shit is all vibe coded lmfao
