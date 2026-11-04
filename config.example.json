@@ -9,6 +9,7 @@
   "displayMode": "auto",
   "showTokens": true,
   "showWhenIdle": true,
+  "showConversationTitle": true,
   "activityType": 3,
   "rotateSeconds": 20,
   "pollIntervalMs": 2000,

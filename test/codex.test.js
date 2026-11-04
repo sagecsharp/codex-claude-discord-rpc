@@ -8,8 +8,10 @@ const path = require('node:path');
 const { CodexReader } = require('../lib/codex');
 
 function fixture(t, options = {}) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dual-presence-codex-'));
-  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'dual-presence-codex-'));
+  const root = path.join(home, 'sessions');
+  fs.mkdirSync(root);
+  t.after(() => fs.rmSync(home, { recursive: true, force: true }));
   const file = path.join(root, 'rollout-example.jsonl');
   let now = Date.parse('2026-11-04T03:00:00Z');
   const reader = new CodexReader({ root, now: () => now, discoveryIntervalMs: 0, ...options });
@@ -18,7 +20,7 @@ function fixture(t, options = {}) {
     fs.appendFileSync(file, `${JSON.stringify({ timestamp: new Date(now).toISOString(), type, payload })}\n`);
   };
   const advance = ms => { now += ms; };
-  return { file, reader, append, advance };
+  return { file, reader, append, advance, home, indexFile: path.join(home, 'session_index.jsonl') };
 }
 
 test('reads metadata, turn lifecycle and cumulative usage without double counting', t => {
@@ -193,4 +195,49 @@ test('synchronous questions wait for matching tool results and meaningful tools 
   assert.equal(f.reader.read()[0].action, 'reading');
   f.append('response_item', { type: 'function_call', name: 'tools.exec_command', arguments: JSON.stringify({ cmd: 'git diff --check' }) }, 1);
   assert.equal(f.reader.read()[0].action, 'reviewing');
+});
+
+test('conversation titles come only from the adjacent explicit saved-name index', t => {
+  const f = fixture(t);
+  f.append('session_meta', { id: 'named-session', title: 'unrecognized metadata title' });
+  f.append('event_msg', { type: 'user_message', message: 'private first prompt' });
+  assert.equal(f.reader.read()[0].conversationTitle, null);
+  fs.writeFileSync(f.indexFile, JSON.stringify({ id: 'named-session', thread_name: 'saved conversation', updated_at: '2026-11-04T03:00:00Z' }) + '\n');
+  f.advance(5000);
+  const state = f.reader.read()[0];
+  assert.equal(state.conversationTitle, 'saved conversation');
+  assert.ok(!JSON.stringify(state).includes('private first prompt'));
+  assert.ok(!JSON.stringify(state).includes('unrecognized metadata title'));
+});
+
+test('title renames refresh without another rollout event and retain the newest saved update', t => {
+  const f = fixture(t);
+  f.append('session_meta', { id: 'rename-session' });
+  f.append('event_msg', { type: 'task_started' });
+  const index = (name, time) => JSON.stringify({ id: 'rename-session', thread_name: name, updated_at: time }) + '\n';
+  fs.writeFileSync(f.indexFile, index('old title', '2026-11-04T03:00:00Z'));
+  assert.equal(f.reader.read()[0].conversationTitle, 'old title');
+  fs.appendFileSync(f.indexFile, index('new title', '2026-11-04T03:01:00Z') + index('stale title', '2026-11-04T02:00:00Z'));
+  f.advance(1000);
+  assert.equal(f.reader.read()[0].conversationTitle, 'old title');
+  f.advance(4000);
+  assert.equal(f.reader.read()[0].conversationTitle, 'new title');
+  fs.appendFileSync(f.indexFile, index('', '2026-11-04T03:02:00Z'));
+  f.advance(5000);
+  assert.equal(f.reader.read()[0].conversationTitle, null);
+});
+
+test('missing or malformed title metadata never falls back to conversation content', t => {
+  const f = fixture(t);
+  f.append('session_meta', { id: 'target-session' });
+  f.append('response_item', { type: 'message', role: 'user', content: 'private content' });
+  fs.writeFileSync(f.indexFile, 'invalid json\n' + JSON.stringify({ id: 'another-session', thread_name: 'another title' }) + '\n' +
+    JSON.stringify({ id: 'target-session', thread_name: { text: 'invalid title field' } }) + '\n');
+  assert.equal(f.reader.read()[0].conversationTitle, null);
+  fs.appendFileSync(f.indexFile, JSON.stringify({ id: 'target-session', thread_name: 'known title' }) + '\n');
+  f.advance(5000);
+  assert.equal(f.reader.read()[0].conversationTitle, 'known title');
+  fs.unlinkSync(f.indexFile);
+  f.advance(5000);
+  assert.equal(f.reader.read()[0].conversationTitle, null);
 });

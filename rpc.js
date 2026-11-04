@@ -61,8 +61,8 @@ async function main() {
   const snapshot = () => {
     const now = Date.now();
     const sessions = has('--demo') ? [
-      { provider: 'codex', sessionId: 'demo-codex', model: 'codex', status: 'working', action: 'testing', updatedAt: now, startedAt: demoStart - 240000, tokens: { total: 28400 }, hasUsage: true },
-      { provider: 'claude', sessionId: 'demo-claude', model: 'claude', status: 'working', action: 'editing', updatedAt: now, startedAt: demoStart - 360000, tokens: { total: 16700 }, usageComplete: true },
+      { provider: 'codex', sessionId: 'demo-codex', conversationTitle: 'build a dashboard', model: 'codex', status: 'working', action: 'testing', updatedAt: now, startedAt: demoStart - 240000, tokens: { total: 28400 }, hasUsage: true },
+      { provider: 'claude', sessionId: 'demo-claude', conversationTitle: 'polish the settings', model: 'claude', status: 'working', action: 'editing', updatedAt: now, startedAt: demoStart - 360000, tokens: { total: 16700 }, usageComplete: true },
     ] : [...(cfg.providers.codex ? codex.read() : []), ...(cfg.providers.claude ? claude.read() : [])];
     return buildActivity(has('--idle') ? [] : sessions, cfg, now, history.value);
   };
