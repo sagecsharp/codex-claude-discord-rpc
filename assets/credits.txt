@@ -1,7 +1,7 @@
 asset credits
 
 original animation design and composition for this project.
-the brand silhouettes are kept recognizable; animation is in the surrounding light and orbit.
+the brand silhouettes are kept recognizable; animation uses crisp orbit strokes.
 
 chatgpt / openai silhouette:
 https://raw.githubusercontent.com/simple-icons/simple-icons/14.15.0/icons/openai.svg
@@ -29,6 +29,10 @@ contain no text: only the brand logos, motion, and separate action pictograms.
 action badges stay bold enough for a 32px thumbnail. action wording belongs
 in the discord text fields, not inside the images.
 png files are static fallbacks.
-each animated file uses a single palette across the whole loop to avoid color flicker.
+all discord image backgrounds are fully opaque pure black, including corners.
+a faint 1.2px edge glow is confined to the brand logo silhouettes. orbit lines
+and action pictograms have no blur, ambient gradients, or colored backdrop fills.
+each animated file uses a single palette across the whole loop to avoid color
+flicker, with exact black reserved for untouched background pixels.
 gif assets need public https hosting for discord; local file paths do not work in rich presence.
 the preview includes a pause control and honors the system reduced-motion preference.

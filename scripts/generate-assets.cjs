@@ -26,7 +26,12 @@ const arc = (radius, start, length, color, opacity = 1, width = 1.7) => {
   const end = (start + length) * Math.PI / 180;
   return `<path d="M${n(128 + radius * Math.cos(radians))} ${n(128 + radius * Math.sin(radians))} A${radius} ${radius} 0 ${length > 180 ? 1 : 0} 1 ${n(128 + radius * Math.cos(end))} ${n(128 + radius * Math.sin(end))}" fill="none" stroke="${color}" stroke-opacity="${n(opacity)}" stroke-width="${width}" stroke-linecap="round"/>`;
 };
-const logo = (provider, x = 128, y = 128, size = 108) => `<g transform="translate(${x - size / 2} ${y - size / 2}) scale(${size / 24})"><path d="${paths[provider === 'codex' ? 'chatgpt' : 'claude']}" fill="${provider === 'codex' ? '#f5f6f6' : '#da947b'}"/></g>`;
+const logoGlow = '<defs><filter id="logo-glow" filterUnits="userSpaceOnUse" x="0" y="0" width="256" height="256" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="1.2"/></filter></defs>';
+const logo = (provider, x = 128, y = 128, size = 108) => {
+  const mark = `<g transform="translate(${x - size / 2} ${y - size / 2}) scale(${size / 24})"><path d="${paths[provider === 'codex' ? 'chatgpt' : 'claude']}" fill="${provider === 'codex' ? '#f5f6f6' : '#da947b'}"/></g>`;
+  // Blur the outer, untransformed group so the glow stays 1.2 output pixels.
+  return `<g filter="url(#logo-glow)" opacity=".25">${mark}</g>${mark}`;
+};
 
 function draw(provider, state, progress) {
   const phase = TAU * progress;
@@ -60,13 +65,8 @@ function draw(provider, state, progress) {
     movement += circle(101 + pulse * 2, accent, (quiet ? .025 : .07) + pulse * .06, .6);
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-    <defs>
-      <radialGradient id="ambient"><stop offset="0" stop-color="${accent}" stop-opacity="${n((quiet ? .045 : .065) + pulse * .025)}"/><stop offset="1" stop-color="${accent}" stop-opacity="0"/></radialGradient>
-      <radialGradient id="surface"><stop offset="0" stop-color="#1b2023"/><stop offset="1" stop-color="#111416"/></radialGradient>
-    </defs>
-    <rect width="256" height="256" rx="32" fill="#111416"/>
-    <circle cx="128" cy="128" r="126" fill="url(#surface)"/>
-    <circle cx="128" cy="128" r="118" fill="url(#ambient)"/>
+    ${logoGlow}
+    <rect width="256" height="256" fill="#000000"/>
     ${movement}
     ${logo(provider, 128, 128, isCodex ? 110 : 111)}
   </svg>`;
@@ -79,9 +79,8 @@ function drawBoth(progress, state) {
   const sweep = state === 'working' ? 87 : 42;
   const opacity = quiet ? .12 + pulse * .16 : .8;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-    <defs><radialGradient id="warm"><stop stop-color="#dda086" stop-opacity=".10"/><stop offset="1" stop-color="#dda086" stop-opacity="0"/></radialGradient><radialGradient id="cool"><stop stop-color="#a4e7d5" stop-opacity=".10"/><stop offset="1" stop-color="#a4e7d5" stop-opacity="0"/></radialGradient></defs>
-    <rect width="256" height="256" rx="32" fill="#111416"/>
-    <circle cx="78" cy="128" r="89" fill="url(#cool)"/><circle cx="178" cy="128" r="89" fill="url(#warm)"/>
+    ${logoGlow}
+    <rect width="256" height="256" fill="#000000"/>
     <g transform="translate(-50 0)">${circle(48, '#a4e7d5', .15)}${arc(48, angle, sweep, '#a4e7d5', opacity, 1.3)}</g>
     <g transform="translate(50 0)">${circle(48, '#dda086', .15)}${arc(48, -angle, sweep, '#dda086', quiet ? opacity : .5 + pulse * .3, 1.3)}</g>
     ${logo('codex', 78, 128, 62)}${logo('claude', 178, 128, 62)}
@@ -95,13 +94,21 @@ function build(name, drawing, { width = WIDTH, count = FRAMES, delay = DELAY } =
     if (index === 0) fs.writeFileSync(path.join(target, `${name}.png`), rendered.asPng());
     frames.push(rendered.pixels);
   }
-  // One palette per loop keeps gradients and static logo edges from flickering.
+  // One palette per loop keeps static edges from flickering. Reserve exact black
+  // so quantization cannot turn untouched background into a near-black tint.
   const samples = Buffer.concat([0, 1, 2, 3].map(quarter => frames[Math.floor(count * quarter / 4)]));
-  const palette = quantize(samples, 256, { format: 'rgb565' });
+  const palette = [[0, 0, 0], ...quantize(samples, 255, { format: 'rgb565' }).filter(color => color.some(channel => channel !== 0))];
   const gif = GIFEncoder();
-  frames.forEach((rgba, index) => gif.writeFrame(applyPalette(rgba, palette), width, width, {
-    ...(index === 0 ? { palette } : {}), delay, repeat: 0, dispose: 1,
-  }));
+  frames.forEach((rgba, index) => {
+    const indexed = applyPalette(rgba, palette);
+    for (let pixel = 0; pixel < indexed.length; pixel++) {
+      const offset = pixel * 4;
+      if (rgba[offset] === 0 && rgba[offset + 1] === 0 && rgba[offset + 2] === 0) indexed[pixel] = 0;
+    }
+    gif.writeFrame(indexed, width, width, {
+      ...(index === 0 ? { palette } : {}), delay, repeat: 0, dispose: 1,
+    });
+  });
   gif.finish();
   const bytes = gif.bytes();
   fs.writeFileSync(path.join(target, `${name}.gif`), bytes);
@@ -116,8 +123,9 @@ for (const action of ACTIONS) build(`action-${action}`, time => drawBadge(action
 fs.writeFileSync(path.join(target, 'manifest.json'), JSON.stringify({
   version: 2, width: WIDTH, height: WIDTH, frames: FRAMES, frameDurationMs: DELAY,
   loopDurationMs: FRAMES * DELAY, animatedFormat: 'gif', staticFormat: 'png',
+  background: '#000000', opaque: true,
   providers: ['codex', 'claude'], states: ['working', 'thinking', 'waiting', 'idle'],
   combined: 'both-working', combinedStates: ['working', 'thinking', 'waiting', 'idle'], sourceVersion: 'simple-icons@14.15.0',
   actionBadges: { width: 128, height: 128, frames: 48, frameDurationMs: DELAY, loopDurationMs: 2400, actions: ACTIONS },
 }, null, 2) + '\n');
-require('./generate-overview.cjs');
+if (!process.argv.includes('--assets-only')) require('./generate-overview.cjs');

@@ -42,10 +42,10 @@ function icon(action, progress = 0) {
 
 function drawBadge(action, progress) {
   const color = COLORS[action] || COLORS.working;
-  const pulse = .10 + (Math.sin(progress * TAU) + 1) * .025;
+  const outlineOpacity = .24 + (Math.sin(progress * TAU) + 1) * .05;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-    <rect width="128" height="128" rx="32" fill="#111718"/>
-    <circle cx="64" cy="64" r="60" fill="${color}" fill-opacity="${n(pulse)}" stroke="${color}" stroke-opacity=".32" stroke-width="2"/>
+    <rect width="128" height="128" fill="#000000"/>
+    <circle cx="64" cy="64" r="60" fill="none" stroke="${color}" stroke-opacity="${n(outlineOpacity)}" stroke-width="2"/>
     <g fill="none" stroke="${color}" color="${color}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">${icon(action, progress)}</g>
   </svg>`;
 }
