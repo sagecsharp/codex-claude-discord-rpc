@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "width": 256,
+  "height": 256,
+  "frames": 80,
+  "frameDurationMs": 50,
+  "loopDurationMs": 4000,
+  "animatedFormat": "gif",
+  "staticFormat": "png",
+  "providers": [
+    "codex",
+    "claude"
+  ],
+  "states": [
+    "working",
+    "thinking",
+    "waiting",
+    "idle"
+  ],
+  "combined": "both-working",
+  "combinedStates": [
+    "working",
+    "thinking",
+    "waiting",
+    "idle"
+  ],
+  "sourceVersion": "simple-icons@14.15.0"
+}

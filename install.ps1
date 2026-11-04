@@ -1,159 +1,95 @@
 <#
-    One-line installer for Clawd, the Claude -> Discord Rich Presence.
-
-    Install or update (paste into PowerShell):
-        irm https://raw.githubusercontent.com/telljoe/claude-discord-rpc-dist/main/install.ps1 | iex
-
-    Uninstall:
-        powershell -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\ClaudeDiscordRPC\install.ps1" -Uninstall
-
-    What it does, all inside your own user account (no admin):
-      - checks for Node.js 18+ (offers to install it with winget)
-      - downloads the latest code to %LOCALAPPDATA%\ClaudeDiscordRPC
-        (an update keeps your config.json)
-      - adds a Startup shortcut so it runs at login, then starts it now
-      - from then on it updates itself from GitHub (autoUpdate in config.json)
+    Installs this local checkout without downloading or enabling upstream updates.
+    .\install.ps1
+    .\install.ps1 -InstallDir 'C:\Tools\CodexClaudeRPC' -NoAutostart
+    .\install.ps1 -NoAutostart -NoStart -SkipSetup
+    Remove login startup with the installed install-autostart.ps1 -Remove.
 #>
 param(
-    [switch]$Uninstall,
-    [string]$InstallDir = (Join-Path $env:LOCALAPPDATA 'ClaudeDiscordRPC'),
-    [switch]$NoAutostart
+    [string]$InstallDir = (Join-Path $env:LOCALAPPDATA 'CodexClaudeRPC'),
+    [switch]$NoAutostart,
+    [switch]$NoStart,
+    [switch]$SkipSetup
 )
 
 $ErrorActionPreference = 'Stop'
-$Repo     = 'telljoe/claude-discord-rpc-dist'
-$Branch   = 'main'
-$LinkPath = Join-Path ([Environment]::GetFolderPath('Startup')) 'Claude Discord RPC.lnk'
-
-function Say($msg, $color = 'Gray') { Write-Host "  $msg" -ForegroundColor $color }
-
-function Stop-Daemon {
-    $rpc = Join-Path $InstallDir 'rpc.js'
-    if ((Test-Path $rpc) -and (Get-Command node -ErrorAction SilentlyContinue)) {
-        & node $rpc --stop | Out-Null
-        Start-Sleep -Milliseconds 500
+$sourceDirectory = [IO.Path]::GetFullPath($PSScriptRoot).TrimEnd('\', '/')
+$destinationDirectory = [IO.Path]::GetFullPath($InstallDir).TrimEnd('\', '/')
+$markerName = '.codex-claude-rpc-install.json'
+$markerPath = Join-Path $destinationDirectory $markerName
+$nodeCommand = Get-Command node -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+if (-not $nodeCommand) { throw 'install node.js 20 or newer, then run this installer again' }
+$nodeVersion = & $nodeCommand.Source -p 'parseInt(process.versions.node)'
+if ($LASTEXITCODE -ne 0 -or [int]$nodeVersion -lt 20) { throw 'node.js 20 or newer is required' }
+if ($destinationDirectory -eq $sourceDirectory) { throw 'choose an install folder separate from this source checkout' }
+if ($destinationDirectory -eq [IO.Path]::GetPathRoot($destinationDirectory).TrimEnd('\', '/') -or
+    $destinationDirectory -eq [IO.Path]::GetFullPath($env:USERPROFILE).TrimEnd('\', '/') -or
+    $destinationDirectory -eq [IO.Path]::GetFullPath($env:LOCALAPPDATA).TrimEnd('\', '/')) {
+    throw 'choose a dedicated install folder'
+}
+if (Test-Path -LiteralPath $destinationDirectory) {
+    $destinationItem = Get-Item -LiteralPath $destinationDirectory
+    if (-not $destinationItem.PSIsContainer -or ($destinationItem.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+        throw 'the install target must be a regular directory'
     }
+    if ((Get-ChildItem -LiteralPath $destinationDirectory -Force | Select-Object -First 1) -and -not (Test-Path -LiteralPath $markerPath)) {
+        throw 'the install folder is not empty and is not owned by this app; choose another folder'
+    }
+    if (Test-Path -LiteralPath $markerPath) {
+        $marker = Get-Content -LiteralPath $markerPath -Raw | ConvertFrom-Json
+        if ($marker.app -ne 'codex-claude-rpc') { throw 'the install marker belongs to another app' }
+        $installedEntry = Join-Path $destinationDirectory 'rpc.js'
+        if (Test-Path -LiteralPath $installedEntry) { & $nodeCommand.Source $installedEntry --stop }
+    }
+} else {
+    New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
 }
 
-Write-Host ''
-Write-Host '  Clawd - Claude Rich Presence for Discord' -ForegroundColor DarkYellow
-Write-Host ''
-
-# ---------------------------------------------------------------- uninstall
-
-if ($Uninstall) {
-    Stop-Daemon
-    # Only remove the shortcut if it launches *this* install, not another copy.
-    if (Test-Path $LinkPath) {
-        $target = (New-Object -ComObject WScript.Shell).CreateShortcut($LinkPath).TargetPath
-        if ($target -and $target.StartsWith($InstallDir, [StringComparison]::OrdinalIgnoreCase)) {
-            Remove-Item $LinkPath -Force
-            Say 'Removed the Startup shortcut.'
+$relativeFiles = @('rpc.js', 'start.vbs', 'package.json', 'package-lock.json', 'README.md', 'LICENSE', 'NOTICE', 'VERSION', 'config.example.json', 'install.ps1', 'install-autostart.ps1', 'preview.html')
+foreach ($directory in @('lib', 'assets', 'scripts')) {
+    $folder = Join-Path $sourceDirectory $directory
+    if (Test-Path -LiteralPath $folder) {
+        foreach ($file in Get-ChildItem -LiteralPath $folder -File -Recurse) {
+            if (-not ($file.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                $relativeFiles += $file.FullName.Substring($sourceDirectory.Length + 1)
+            }
         }
     }
-    if (Test-Path $InstallDir) {
-        # The script may be running from inside the folder; delete it after we exit.
-        Start-Process cmd -WindowStyle Hidden -ArgumentList "/c timeout /t 2 >nul & rmdir /s /q `"$InstallDir`""
-        Say "Removed $InstallDir"
-    }
-    Say 'Uninstalled. Your Discord status clears within a few seconds.' Green
-    return
 }
-
-# ---------------------------------------------------------------- node
-
-function Get-NodeMajor {
-    $node = Get-Command node -ErrorAction SilentlyContinue
-    if (-not $node) { return 0 }
-    $v = (& node -v) -replace '^v', ''
-    return [int]($v.Split('.')[0])
+$installedFiles = @()
+foreach ($relativeFile in $relativeFiles) {
+    $sourceFile = Join-Path $sourceDirectory $relativeFile
+    if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) { continue }
+    $destinationFile = Join-Path $destinationDirectory $relativeFile
+    New-Item -ItemType Directory -Path (Split-Path -Parent $destinationFile) -Force | Out-Null
+    Copy-Item -LiteralPath $sourceFile -Destination $destinationFile -Force
+    $installedFiles += $relativeFile
 }
-
-if ((Get-NodeMajor) -lt 18) {
-    Say 'Node.js 18 or newer is required and was not found.' Yellow
-    if (Get-Command winget -ErrorAction SilentlyContinue) {
-        $ans = Read-Host '  Install Node.js LTS now with winget? [Y/n]'
-        if ($ans -match '^(n|no)$') { Say 'Install Node.js from https://nodejs.org and run this again.'; return }
-        winget install --id OpenJS.NodeJS.LTS -e --silent --accept-source-agreements --accept-package-agreements
-        # Pick up the new PATH without opening a new terminal.
-        $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' +
-                    [Environment]::GetEnvironmentVariable('Path', 'User')
-        if ((Get-NodeMajor) -lt 18) { Say 'Node.js still not found. Open a new terminal and run this again.' Red; return }
-    } else {
-        Say 'Install Node.js LTS from https://nodejs.org, then run this again.' Red
-        return
-    }
+$configPath = Join-Path $destinationDirectory 'config.json'
+$sourceConfigPath = Join-Path $sourceDirectory 'config.json'
+if (-not (Test-Path -LiteralPath $configPath) -and (Test-Path -LiteralPath $sourceConfigPath -PathType Leaf)) {
+    Copy-Item -LiteralPath $sourceConfigPath -Destination $configPath
 }
-Say "Node.js $(& node -v) found."
+@{ app = 'codex-claude-rpc'; files = $installedFiles; installedAt = [DateTime]::UtcNow.ToString('o') } |
+    ConvertTo-Json -Depth 3 | Set-Content -LiteralPath $markerPath -Encoding UTF8
 
-# ---------------------------------------------------------------- download
-
-[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-$tmp = Join-Path ([IO.Path]::GetTempPath()) ("clawd-" + [Guid]::NewGuid().ToString('N'))
-New-Item -ItemType Directory -Path $tmp | Out-Null
-try {
-    $zip = Join-Path $tmp 'src.zip'
-    Say "Downloading $Repo..."
-    $ProgressPreference = 'SilentlyContinue'
-    Invoke-WebRequest "https://github.com/$Repo/archive/refs/heads/$Branch.zip" -OutFile $zip -UseBasicParsing
-    Expand-Archive $zip -DestinationPath $tmp
-    $src = Get-ChildItem $tmp -Directory | Select-Object -First 1
-
-    $updating = Test-Path (Join-Path $InstallDir 'rpc.js')
-    if ($updating) { Stop-Daemon }
-    New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
-    # Copy everything over; config.json and logs aren't in the repo, so yours survive.
-    Copy-Item (Join-Path $src.FullName '*') $InstallDir -Recurse -Force
-    Say $(if ($updating) { "Updated $InstallDir" } else { "Installed to $InstallDir" })
-} finally {
-    Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
+$setupScript = Join-Path $destinationDirectory 'scripts\setup.js'
+& $nodeCommand.Source $setupScript --check
+$configurationState = $LASTEXITCODE
+if ($configurationState -eq 1) { throw 'the installed configuration is invalid; fix it before starting the app' }
+if (-not $SkipSetup -and $configurationState -eq 2) {
+    & $nodeCommand.Source $setupScript
+    if ($LASTEXITCODE -ne 0) { throw 'setup did not finish; run node scripts/setup.js from the install folder' }
+    & $nodeCommand.Source $setupScript --check
+    $configurationState = $LASTEXITCODE
 }
-
-# ---------------------------------------------------------------- privacy (first install only)
-
-$userConfig = Join-Path $InstallDir 'config.json'
-if (-not (Test-Path $userConfig)) {
-    Write-Host ''
-    Say 'What should your Discord status show?'
-    Say '  1  full     session title + what Claude is doing ("Editing app.js")'
-    Say '  2  project  folder name + a generic verb ("Writing code")'
-    Say '  3  minimal  just "Working with Claude"'
-    $pick = Read-Host '  Choose 1-3 [1]'
-    $privacy = @{ '2' = 'project'; '3' = 'minimal' }[$pick]
-    if (-not $privacy) { $privacy = 'full' }
-    # Only overrides go here; everything else comes from config.example.json.
-    "{`n  `"privacy`": `"$privacy`"`n}`n" | Set-Content -Path $userConfig -Encoding ASCII
-    Say "Privacy: $privacy (change it any time in config.json)"
+$configured = $configurationState -eq 0
+if (-not $NoAutostart -and $configured) {
+    & (Join-Path $destinationDirectory 'install-autostart.ps1') -NoStart
 }
-
-# ---------------------------------------------------------------- autostart + start
-
-$vbs = Join-Path $InstallDir 'start.vbs'
-if (-not $NoAutostart) {
-    $shell = New-Object -ComObject WScript.Shell
-    $link = $shell.CreateShortcut($LinkPath)
-    $link.TargetPath = $vbs
-    $link.WorkingDirectory = $InstallDir
-    $link.Description = 'Claude -> Discord Rich Presence'
-    $link.Save()
-    Say 'Starts automatically at login.'
+if (-not $NoStart -and $configured) {
+    $launcher = Join-Path $destinationDirectory 'start.vbs'
+    Start-Process -FilePath (Join-Path $env:WINDIR 'System32\wscript.exe') -ArgumentList "`"$launcher`"" -WorkingDirectory $destinationDirectory -WindowStyle Hidden
 }
-Start-Process wscript.exe -ArgumentList "`"$vbs`""
-Start-Sleep -Seconds 3
-
-$log = Join-Path $InstallDir 'rpc.log'
-$tail = if (Test-Path $log) { Get-Content $log -Tail 3 } else { @() }
-Write-Host ''
-if ($tail -match 'connected to Discord') {
-    Say 'Running and connected to Discord.' Green
-} elseif ($tail -match 'already running') {
-    Say 'Another copy is already running from a different folder, so this one stepped aside.' Yellow
-    Say 'Stop the other one (node <its folder>\rpc.js --stop), then run start.vbs here.' Yellow
-} else {
-    Say 'Running. If Discord is closed it will connect when Discord opens.' Green
-}
-Write-Host ''
-Say 'Make sure Discord > Settings > Activity Privacy > "Share your detected activities" is on.'
-Say "Preview what it shows:  node `"$InstallDir\rpc.js`" --status"
-Say "Uninstall:              powershell -ExecutionPolicy Bypass -File `"$InstallDir\install.ps1`" -Uninstall"
-Write-Host ''
+Write-Host "installed in $destinationDirectory"
+if (-not $configured) { Write-Host "next: run node `"$(Join-Path $destinationDirectory 'scripts\setup.js')`"" }
