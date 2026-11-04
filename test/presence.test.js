@@ -38,28 +38,65 @@ test('each provider status maps to a matching asset', () => {
   }
 });
 
-test('combined mode uses dual art and rotate mode alternates providers', () => {
-  const sessions = [session('codex'), session('claude', { status: 'thinking' })];
-  const combined = buildActivity(sessions, config({ displayMode: 'combined' }), NOW);
-  assert.match(combined.assets.large_image, /both-working\.gif/);
-  const first = buildActivity(sessions, config({ displayMode: 'rotate' }), NOW);
-  const second = buildActivity(sessions, config({ displayMode: 'rotate' }), NOW + 20000);
-  assert.notEqual(first.assets.large_image, second.assets.large_image);
-  assert.match(first.state, /codex 1\.2k · claude 1\.2k/);
-  assert.equal(first.state, second.state);
-});
-
-test('combined art follows activity and does not rotate its timer every twenty seconds', () => {
-  for (const status of ['working', 'thinking', 'waiting', 'idle']) {
-    const sessions = [session('codex', { status }), session('claude', { status })];
-    const cfg = config({ displayMode: 'combined', showWhenIdle: true });
+test('parallel providers use stable split art and the earliest start in every display mode', () => {
+  const sessions = [session('codex', { startedAt: NOW - 90000 }), session('claude', { status: 'thinking', startedAt: NOW - 30000 })];
+  for (const displayMode of ['auto', 'combined', 'rotate']) {
+    const cfg = config({ displayMode });
     const first = buildActivity(sessions, cfg, NOW);
     const second = buildActivity(sessions, cfg, NOW + 20000);
-    assert.match(first.assets.large_image, new RegExp(`both-${status}\\.gif`));
+    assert.match(first.assets.large_image, /split-working-thinking\.gif/);
+    assert.equal(first.assets.large_image, second.assets.large_image);
+    assert.match(first.state, /codex 1\.2k · claude 1\.2k/);
+    assert.equal(first.state, second.state);
+    assert.deepEqual(first.timestamps, { start: NOW - 90000 });
     assert.deepEqual(first.timestamps, second.timestamps);
+  }
+});
+
+test('all nine active status pairs use codex-left claude-right split variants', () => {
+  for (const codexStatus of ['working', 'thinking', 'waiting']) {
+    for (const claudeStatus of ['working', 'thinking', 'waiting']) {
+      const sessions = [session('claude', { status: claudeStatus }), session('codex', { status: codexStatus })];
+      const result = buildActivity(sessions, config(), NOW);
+      assert.match(result.assets.large_image, new RegExp(`split-${codexStatus}-${claudeStatus}\\.gif`));
+      assert.match(result.assets.large_text, /codex: .+ \| claude: .+/);
+    }
   }
   const absent = buildActivity([], config({ showWhenIdle: true }), NOW);
   assert.match(absent.assets.large_image, /both-idle\.gif/);
+});
+
+test('split art is not selected for idle stale finished or disabled providers', () => {
+  for (const inactive of [
+    { status: 'idle' },
+    { stale: true },
+    { updatedAt: NOW - 121000 },
+    { status: 'idle', action: 'done', actionAt: NOW - 1000 },
+  ]) {
+    for (const activeProvider of ['codex', 'claude']) {
+      const other = activeProvider === 'codex' ? 'claude' : 'codex';
+      const sessions = [session(activeProvider), session(other, inactive)];
+      for (const at of [NOW, NOW + 10000]) {
+        const result = buildActivity(sessions, config(), at);
+        assert.match(result.assets.large_image, new RegExp(`${activeProvider}-working\\.gif`));
+        assert.doesNotMatch(result.assets.large_image, /split-/);
+      }
+    }
+  }
+  for (const disabled of ['codex', 'claude']) {
+    const result = buildActivity([session('codex'), session('claude')], config({ providers: { [disabled]: false } }), NOW);
+    assert.doesNotMatch(result.assets.large_image, /split-/);
+    assert.doesNotMatch(result.details, new RegExp(disabled));
+  }
+});
+
+test('parallel art preserves static and portal fallbacks with both action labels', () => {
+  const sessions = [session('codex', { action: 'testing' }), session('claude', { status: 'waiting' })];
+  const still = buildActivity(sessions, config({ images: { animated: false } }), NOW);
+  assert.match(still.assets.large_image, /split-working-waiting\.png/);
+  assert.equal(still.assets.large_text, 'codex: running tests | claude: waiting for you');
+  const portal = buildActivity(sessions, config({ images: { portal: true } }), NOW);
+  assert.equal(portal.assets.large_image, 'split_working_waiting');
 });
 
 test('minimal privacy excludes cwd, titles, prompts, files, and tool arguments', () => {

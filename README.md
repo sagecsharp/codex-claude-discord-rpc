@@ -32,11 +32,16 @@ the installer copies this local checkout to `%LOCALAPPDATA%\CodexClaudeRPC`. it 
 - both token totals on the same card when both have recent sessions.
 - when idle: both logos, all-time locally recorded tokens for each assistant, and their estimated api costs.
 - a white chatgpt knot with a mint orbit; a coral claude sun with a warm pulse.
-- four animations for each provider, plus four paired-logo animations. each is a seamless four-second, 20 fps loop.
+- when both are active, one split logo: chatgpt on the left, claude on the right, with each half showing its own activity.
+- four animations for each provider, four paired-logo animations, and nine split-state combinations. each is a seamless four-second, 20 fps loop.
 - distinct action badges for editing, reading, searching, testing, terminal commands, browsing, reviewing, thinking, waiting, finished, idle, and other work.
 - an elapsed timer and an optional project folder name.
 
-`auto` follows the active provider and alternates the main logo every 20 seconds when both are active. the small badge shows the current action: a pencil for edits, a magnifier for searches, a checklist for tests, and a pause icon when waiting for you. `combined` keeps both logos in one image. `rotate` also gives recent idle providers a turn as the main logo. text keeps both providers' actions and usage visible in every mode. the discord member list uses the action line too.
+when both assistants are active, every display mode uses a split image with half of each logo. each side animates independently for working, thinking, or waiting. the split stays in place while the small action badge can alternate between assistants. once both are idle, the paired full logos and lifetime totals return.
+
+![split logos while both assistants are active](assets/split-working-working.gif)
+
+`auto` follows the active provider when only one is active. the small badge shows the current action: a pencil for edits, a magnifier for searches, a checklist for tests, and a pause icon when waiting for you. `combined` also keeps both logos visible when one recent session is idle. `rotate` gives recent idle providers a turn as the main logo. text keeps both providers' actions and usage visible in every mode. the discord member list uses the action line too.
 
 action text comes from a fixed vocabulary. raw commands, prompts, and tool inputs never appear on discord. fast tool results keep their action visible for up to eight seconds to avoid flicker. a finished action stays visible for `doneSeconds` (20 seconds by default), then the all-time idle card appears.
 
