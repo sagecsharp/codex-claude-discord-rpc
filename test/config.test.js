@@ -23,7 +23,7 @@ test('config layers preserve nested defaults and command line overrides environm
 });
 test('malformed config fails visibly without silently switching privacy', (t) => {
   const root = fixture(t), file = path.join(root, 'config.json');
-  for (const value of [null, [], { images: [] }, { providers: null }, { showTokens: 'false' }, { privacy: 'full' }, { pollIntervalMs: 0 }]) {
+  for (const value of [null, [], { images: [] }, { providers: null }, { showTokens: 'false' }, { showConversationTitle: 'false' }, { privacy: 'full' }, { pollIntervalMs: 0 }]) {
     fs.writeFileSync(file, JSON.stringify(value));
     assert.throws(() => loadConfig(root, [], {}));
   }

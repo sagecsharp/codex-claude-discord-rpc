@@ -29,6 +29,7 @@ the installer copies this local checkout to `%LOCALAPPDATA%\CodexClaudeRPC`. it 
 ## what it shows
 
 - plain-language actions such as `codex: running tests` and `claude: editing files`.
+- the saved conversation title beside each active assistant's action.
 - both token totals on the same card when both have recent sessions.
 - when idle: both logos, all-time locally recorded tokens for each assistant, and their estimated api costs.
 - a white chatgpt knot with a mint orbit; a coral claude sun with a warm pulse.
@@ -59,6 +60,7 @@ optional `config.json` overrides [config.example.json](config.example.json). it 
   "privacy": "minimal",
   "showTokens": true,
   "showWhenIdle": true,
+  "showConversationTitle": true,
   "images": { "animated": true }
 }
 ```
@@ -66,6 +68,7 @@ optional `config.json` overrides [config.example.json](config.example.json). it 
 - `privacy`: `minimal` shows provider, state, model, and optional usage. `project` also shows the current folder's name. prompt text, commands, file contents, and full paths are never published. `hideProjects` accepts folder globs such as `client-*`.
 - `providers`: set `codex` or `claude` to false to hide that provider.
 - `showTokens`: false hides usage and cost. `showWhenIdle`: true (default) shows the all-time idle card; false clears the presence when nothing is active.
+- `showConversationTitle`: true in the bundled configuration shows saved conversation titles in discord's text fields. set false to hide them. titles are shortened to fit both assistants when active together; logo hover allows more title text within discord's text limit. missing titles leave the usual action labels visible. titles are read from codex's session index and claude's explicit session/title metadata, never guessed from prompt text.
 - `images.baseUrl`: public https directory containing the bundled gifs. `images.animated: false` selects png stills. for developer portal uploads, use the png files, name keys like `codex_working`, and set `images.portal: true`.
 - `codexRoot`: custom sessions directory (default `$CODEX_HOME/sessions` or `~/.codex/sessions`). `claudeRoot`: custom claude home (default `$CLAUDE_CONFIG_DIR` or `~/.claude`).
 - `codexHistoryRoot`: custom codex home containing `sessions` and `archived_sessions`. defaults to `$CODEX_HOME`, `~/.codex`, or the parent of a custom `codexRoot`.

@@ -220,3 +220,92 @@ test('idle is enabled by default and completed actions transition to all-time to
   const result = buildActivity([session('codex', { status: 'idle', action: 'done', actionAt: NOW - 30000 })], config({ showWhenIdle: true }), NOW);
   assert.equal(result.state, 'counting local history');
 });
+
+test('opted-in saved conversation titles retain their case beside the current action', () => {
+  const result = buildActivity([session('codex', { action: 'editing', conversationTitle: 'Fix OAuth Callback' })], config({ showConversationTitle: true }), NOW);
+  assert.equal(result.details, 'codex: editing files · Fix OAuth Callback · codex-model');
+  assert.equal(result.assets.large_text, 'codex: editing files · Fix OAuth Callback');
+  assert.match(result.state, /^codex 1\.2k tokens/);
+  const longTitle = 'A'.repeat(90);
+  const long = buildActivity([session('claude', { action: 'testing', conversationTitle: longTitle })], config({ showConversationTitle: true }), NOW);
+  assert.match(long.details, new RegExp(`^claude: running tests · ${'A'.repeat(74)}…`));
+  assert.equal(long.assets.large_text, `claude: running tests · ${longTitle}`);
+});
+
+test('dual titles share the available space without truncating either action label', () => {
+  for (const displayMode of ['auto', 'combined', 'rotate']) {
+    const result = buildActivity([
+      session('codex', { action: 'testing', conversationTitle: '🧪'.repeat(100) }),
+      session('claude', { status: 'waiting', conversationTitle: '漢'.repeat(100) }),
+    ], config({ showConversationTitle: true, displayMode }), NOW);
+    const titles = result.details.match(/^codex: running tests · (.+) \| claude: waiting for you · (.+)$/);
+    assert.ok(titles);
+    assert.ok(titles[1].length > 10 && titles[2].length > 10);
+    assert.ok(Math.abs(titles[1].length - titles[2].length) <= 2);
+    assert.ok(titles[1].endsWith('…') && titles[2].endsWith('…'));
+    for (const text of [result.details, result.assets.large_text, result.assets.small_text]) {
+      assert.ok(text.length <= 128);
+      assert.doesNotMatch(text, /[\uD800-\uDFFF]/u, 'no isolated surrogate code units');
+    }
+  }
+  const asymmetric = buildActivity([
+    session('codex', { conversationTitle: 'Short' }),
+    session('claude', { conversationTitle: 'L'.repeat(100) }),
+  ], config({ showConversationTitle: true }), NOW);
+  assert.match(asymmetric.details, /codex: working · Short \| claude: working · L{60,}…/);
+});
+
+test('title opt-out preserves the existing presence without leaking saved or generic titles', () => {
+  const clean = [session('codex'), session('claude', { status: 'thinking' })];
+  const privateSessions = clean.map((s) => ({ ...s, conversationTitle: 'Private Saved Title', title: 'Private Generic Title', prompt: 'Private Prompt' }));
+  for (const cfg of [config(), config({ showConversationTitle: false, privacy: 'project' })]) {
+    assert.deepEqual(buildActivity(privateSessions, cfg, NOW), buildActivity(clean, cfg, NOW));
+    assert.doesNotMatch(JSON.stringify(buildActivity(privateSessions, cfg, NOW)), /Private/);
+  }
+});
+
+test('only a saved conversationTitle string can supply the title', () => {
+  const cfg = config({ showConversationTitle: true });
+  const clean = session('codex');
+  for (const conversationTitle of [undefined, null, {}, 123, ' \n\u202e ']) {
+    const untrusted = { ...clean, conversationTitle, title: 'Private Generic Title', prompt: 'Private Prompt', initialPrompt: 'Private First Prompt' };
+    assert.deepEqual(buildActivity([untrusted], cfg, NOW), buildActivity([clean], cfg, NOW));
+  }
+});
+
+test('saved titles remove controls and bidi formatting while keeping normal unicode', () => {
+  const result = buildActivity([session('claude', {
+    conversationTitle: '  Fix\u0000\tOAuth\r\nCallback\u202e\u2066  Café 🧪 \u007f\u009f\ud800 ',
+  })], config({ showConversationTitle: true }), NOW);
+  assert.equal(result.assets.large_text, 'claude: working · Fix OAuth Callback Café 🧪');
+  for (const text of [result.details, result.assets.large_text]) {
+    assert.doesNotMatch(text, /[\p{Cc}\p{Cf}]/u);
+    assert.doesNotMatch(text, /[\uD800-\uDFFF]/u);
+  }
+});
+
+test('idle and stale titles do not alter lifetime cards or active-provider descriptions', () => {
+  const cfg = config({ showConversationTitle: true, showWhenIdle: true });
+  const history = { ready: true, providers: {
+    codex: { total: 5000, costUSD: 0.2, unpricedTokens: 0 },
+    claude: { total: 8000, costUSD: 0.5, unpricedTokens: 0 },
+  } };
+  for (const extra of [{ status: 'idle' }, { stale: true }, { status: 'idle', action: 'done', actionAt: NOW - 1000 }]) {
+    const clean = session('codex', extra);
+    const titled = { ...clean, conversationTitle: 'Idle Secret' };
+    assert.deepEqual(buildActivity([titled], cfg, NOW, history), buildActivity([clean], cfg, NOW, history));
+    const active = session('claude', { conversationTitle: 'Active Work' });
+    const combined = buildActivity([titled, active], cfg, NOW, history);
+    assert.doesNotMatch(JSON.stringify(combined), /Idle Secret/);
+    assert.match(combined.details, /Active Work/);
+  }
+});
+
+test('disabled-provider titles stay hidden while folder privacy is independent of title opt-in', () => {
+  const result = buildActivity([
+    session('codex', { cwd: 'c:/private/client-secret', conversationTitle: 'Visible Saved Title' }),
+    session('claude', { conversationTitle: 'Disabled Secret' }),
+  ], config({ showConversationTitle: true, privacy: 'project', hideProjects: ['client-*'], providers: { claude: false } }), NOW);
+  assert.match(result.details, /Visible Saved Title/);
+  assert.doesNotMatch(JSON.stringify(result), /client-secret|Disabled Secret/);
+});

@@ -49,6 +49,7 @@
   let state = 'working';
   let action = 'working';
   const splitStates = { codex: 'working', claude: 'working' };
+  const demoTitles = { codex: 'build a dashboard', claude: 'polish the settings' };
   const actions = {
     working: 'working', thinking: 'thinking', editing: 'editing code', reading: 'reading files',
     searching: 'searching code', testing: 'running tests', terminal: 'running commands',
@@ -81,9 +82,9 @@
     const idle = action === 'idle';
     const activityLabels = ['codex', 'claude'].map(provider => {
       const providerState = state === 'idle' ? 'idle' : splitStates[provider];
-      return `${provider}: ${providerState === state ? actions[action] : actions[providerState]}`;
+      return `${provider}: ${providerState === state ? actions[action] : actions[providerState]}${state !== 'idle' ? ` · ${demoTitles[provider]}` : ''}`;
     });
-    document.getElementById('status-line').textContent = idle ? 'all-time tokens · codex 28.4m · claude 16.7m' : activityLabels.join(' · ');
+    document.getElementById('status-line').textContent = idle ? 'all-time tokens · codex 28.4m · claude 16.7m' : activityLabels.join(' | ');
     document.getElementById('usage-line').textContent = idle ? 'api est. · codex $51.38 · claude $79.24' : 'codex 12.4k · claude 8.2k tokens';
     document.getElementById('usage-caption').textContent = `${idle ? 'local history' : 'session usage'} · example data`;
     document.querySelector('.action-badge').hidden = idle;
