@@ -147,16 +147,24 @@ test('unattributed cumulative gaps remain unpriced rather than inheriting a late
   assert.equal(result.records.find(r => !r.key.endsWith(':gap')).contextTokens, 100);
 });
 
-test('parses compressed history and recovers around malformed or oversized lines', async t => {
+test('recovers around malformed or oversized lines in available history formats', async t => {
   const f = fixture(t);
   const a = usage(100, 10, 80);
   const rows = [meta(), context(), 'malformed-json', 'x'.repeat(5000), count(a, a)];
-  const file = f.write('compressed.jsonl.zst', rows);
+  const file = f.write(typeof zlib.zstdCompressSync === 'function' ? 'compressed.jsonl.zst' : 'plain.jsonl', rows);
   const result = await parseFile(file, { maxLineBytes: 1000 });
   assert.equal(result.records.length, 1);
   assert.equal(result.records[0].total, 110);
   assert.ok(result.warnings.some(w => w.startsWith('malformed_json')));
   assert.ok(result.warnings.some(w => w.startsWith('oversized_line')));
+});
+
+test('unsupported zstd runtimes report incomplete coverage explicitly', { skip: typeof zlib.createZstdDecompress === 'function' }, async t => {
+  const f = fixture(t);
+  const result = await parseFile(path.join(f.directory, 'unsupported.jsonl.zst'));
+  assert.deepEqual(result.records, []);
+  assert.ok(result.warnings.some(w => w.startsWith('zstd_not_supported')));
+  assert.equal(result.coverage.incomplete, true);
 });
 
 test('a partial trailing row and a missing file yield warnings without losing earlier records', async t => {
