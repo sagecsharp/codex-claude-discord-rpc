@@ -9,6 +9,7 @@ const { CodexReader } = require('./lib/codex');
 const { ClaudeReader } = require('./lib/claude-reader');
 const { buildActivity } = require('./lib/dual-presence');
 const { DiscordIPC } = require('./lib/discord');
+const { LifetimeHistory } = require('./lib/history');
 const argv = process.argv.slice(2);
 const has = (flag) => argv.includes(flag);
 const controlPath = process.platform === 'win32'
@@ -29,7 +30,7 @@ function log(message) {
 
 async function main() {
   if (has('--help')) {
-    console.log('codex + claude discord presence\n\nnode scripts/setup.js        configure discord and image hosting\nnode rpc.js                 run\nnode rpc.js --status --json  preview locally\nnode rpc.js --demo --status  sample data preview\nnode rpc.js --once           verify one update, clear and exit\nnode rpc.js --stop           stop this fork\n\noptions: --client-id=ID --image-base=https://.../assets --config=FILE');
+    console.log('codex + claude discord presence\n\nnode scripts/setup.js         configure discord and image hosting\nnode rpc.js                  run\nnode rpc.js --status --json   preview locally\nnode rpc.js --idle --status   preview lifetime totals\nnode rpc.js --stats           local lifetime usage and pricing coverage\nnode rpc.js --demo --status   sample data preview\nnode rpc.js --once            verify one update, clear and exit\nnode rpc.js --stop            stop this fork\n\noptions: --client-id=ID --image-base=https://.../assets --config=FILE');
     return;
   }
   if (has('--stop')) {
@@ -42,6 +43,18 @@ async function main() {
     return;
   }
   const cfg = loadConfig(__dirname, argv);
+  if (has('--idle') && !has('--status') && !has('--once')) throw new Error('--idle requires --status or --once');
+  const history = new LifetimeHistory({ cacheFile: path.join(__dirname, 'cache', 'lifetime-v1.json'), roots: {
+    codex: cfg.providers.codex ? cfg.codexHistoryRoot || (cfg.codexRoot ? path.dirname(cfg.codexRoot) : process.env.CODEX_HOME || path.join(os.homedir(), '.codex')) : false,
+    claude: cfg.providers.claude ? cfg.claudeRoot || process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude') : false,
+  } });
+  if (has('--demo')) history.value = { ready: true, providers: {
+    codex: { total: 28400000, costUSD: 51.38, unpricedTokens: 0 },
+    claude: { total: 16700000, costUSD: 79.24, unpricedTokens: 0 },
+  } };
+  else if (has('--stats') || has('--idle')) history.value = await history.readOnce();
+  else if (has('--status')) history.value = await history.readOnce(true);
+  if (has('--stats')) { console.log(JSON.stringify(history.value, null, 2)); return; }
   const codex = new CodexReader({ root: cfg.codexRoot || undefined, staleMs: cfg.staleMs, idleRetentionMs: cfg.idleRetentionMs });
   const claude = new ClaudeReader({ root: cfg.claudeRoot || undefined, staleMs: cfg.staleMs, retentionMs: cfg.idleRetentionMs });
   const demoStart = Date.now();
@@ -51,7 +64,7 @@ async function main() {
       { provider: 'codex', sessionId: 'demo-codex', model: 'codex', status: 'working', action: 'testing', updatedAt: now, startedAt: demoStart - 240000, tokens: { total: 28400 }, hasUsage: true },
       { provider: 'claude', sessionId: 'demo-claude', model: 'claude', status: 'working', action: 'editing', updatedAt: now, startedAt: demoStart - 360000, tokens: { total: 16700 }, usageComplete: true },
     ] : [...(cfg.providers.codex ? codex.read() : []), ...(cfg.providers.claude ? claude.read() : [])];
-    return buildActivity(sessions, cfg, now);
+    return buildActivity(has('--idle') ? [] : sessions, cfg, now, history.value);
   };
   if (has('--status')) {
     const activity = snapshot();
@@ -75,10 +88,11 @@ async function main() {
     if (closing) return;
     closing = true;
     clearInterval(poll); clearTimeout(retry); clearTimeout(onceTimeout);
-    server.close(); ipc?.close();
+    server.close(); ipc?.close(); history.close();
     setTimeout(() => process.exit(code), 300);
   }
   function start() {
+    if (!has('--demo') && !has('--idle')) history.start();
     ipc = new DiscordIPC(cfg.clientId, log);
     let delay = 2000, last = '', accepted = false;
     const publish = () => {

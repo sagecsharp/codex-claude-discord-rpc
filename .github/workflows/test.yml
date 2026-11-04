@@ -14,3 +14,4 @@ jobs:
           node-version: ${{ matrix.node }}
       - run: node --test
       - run: node rpc.js --demo --status --json
+      - run: node rpc.js --demo --idle --status --json

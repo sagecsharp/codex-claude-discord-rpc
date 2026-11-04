@@ -27,7 +27,7 @@ test('configuration defaults to minimal privacy and preserves unrelated settings
   });
   assert.equal(result.privacy, 'minimal');
   assert.equal(result.displayMode, 'auto');
-  assert.equal(result.showWhenIdle, false);
+  assert.equal(result.showWhenIdle, true);
   assert.equal(result.showTokens, false);
   assert.equal(result.images.animated, true);
   assert.equal(result.images.version, '3');
