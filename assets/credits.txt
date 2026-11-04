@@ -1,0 +1,28 @@
+asset credits
+
+original animation design and composition for this project.
+the brand silhouettes are kept recognizable; animation is in the surrounding light and orbit.
+
+chatgpt / openai silhouette:
+https://raw.githubusercontent.com/simple-icons/simple-icons/14.15.0/icons/openai.svg
+https://openai.com/brand/
+
+claude silhouette:
+https://raw.githubusercontent.com/simple-icons/simple-icons/14.15.0/icons/claude.svg
+https://www.anthropic.com/
+
+simple icons 14.15.0 is distributed under cc0 1.0 universal:
+https://github.com/simple-icons/simple-icons/blob/14.15.0/LICENSE.md
+the pinned source svg files are included in source/.
+brand and trademark rights remain with their respective owners.
+this is an independent integration, not affiliated with or endorsed by openai or anthropic.
+
+regenerate
+  npm install --save-dev @resvg/resvg-js gifenc
+  node scripts/generate-assets.cjs
+
+all twelve animations are 256 x 256 pixels, 80 frames, 50ms per frame,
+and loop indefinitely every four seconds. png files are static fallbacks.
+each animated file uses a single palette across the whole loop to avoid color flicker.
+gif assets need public https hosting for discord; local file paths do not work in rich presence.
+the preview includes a pause control and honors the system reduced-motion preference.

@@ -1,0 +1,8 @@
+node_modules/
+config.json
+*.log
+*.log.*
+cache/
+*.update-tmp
+.installed-files.json
+.codex-claude-rpc-install.json

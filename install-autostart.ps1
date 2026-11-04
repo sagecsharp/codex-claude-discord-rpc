@@ -1,41 +1,47 @@
 <#
-    Adds (or with -Remove, deletes) a Startup shortcut so the presence daemon
-    runs at login. No admin rights needed - it only writes to your own
-    Startup folder.
-
-        powershell -ExecutionPolicy Bypass -File install-autostart.ps1
-        powershell -ExecutionPolicy Bypass -File install-autostart.ps1 -Remove
+    Adds this installation to the current user's login startup.
+    .\install-autostart.ps1 -NoStart
+    .\install-autostart.ps1 -Remove
+    -Remove only removes this installation's shortcut; node rpc.js --stop stops it.
 #>
-param([switch]$Remove)
+param([switch]$Remove, [switch]$NoStart)
 
 $ErrorActionPreference = 'Stop'
+$appDirectory = [IO.Path]::GetFullPath($PSScriptRoot)
+$launcher = Join-Path $appDirectory 'start.vbs'
+$scriptHost = Join-Path $env:WINDIR 'System32\wscript.exe'
+$startupDirectory = [Environment]::GetFolderPath('Startup')
+$linkPath = Join-Path $startupDirectory 'Codex and Claude RPC.lnk'
+$arguments = "`"$launcher`""
+$shell = New-Object -ComObject WScript.Shell
 
-$here     = Split-Path -Parent $MyInvocation.MyCommand.Path
-$target   = Join-Path $here 'start.vbs'
-$startup  = [Environment]::GetFolderPath('Startup')
-$linkPath = Join-Path $startup 'Claude Discord RPC.lnk'
-
+if (Test-Path -LiteralPath $linkPath) {
+    $existingLink = $shell.CreateShortcut($linkPath)
+    $owned = ($existingLink.TargetPath -eq $scriptHost -and $existingLink.Arguments -eq $arguments) -or
+        $existingLink.TargetPath -eq $launcher
+    if (-not $owned) { throw 'the startup shortcut points to another installation; remove it from that installation first' }
+}
 if ($Remove) {
-    & node (Join-Path $here 'rpc.js') --stop
-    if (Test-Path $linkPath) {
-        Remove-Item $linkPath -Force
-        Write-Host "Removed $linkPath"
-    } else {
-        Write-Host "Nothing to remove - no shortcut at $linkPath"
-    }
+    if (Test-Path -LiteralPath $linkPath) {
+        Remove-Item -LiteralPath $linkPath
+        Write-Host 'removed this app from login startup'
+    } else { Write-Host 'this app has no login startup shortcut' }
     return
 }
-
-if (-not (Test-Path $target)) { throw "start.vbs not found next to this script ($target)" }
-
-$shell = New-Object -ComObject WScript.Shell
-$link  = $shell.CreateShortcut($linkPath)
-$link.TargetPath       = $target
-$link.WorkingDirectory = $here
-$link.Description      = 'Claude Desktop -> Discord Rich Presence'
-$link.Save()
-
-Write-Host "Installed $linkPath"
-Write-Host "Starting it now..."
-Start-Process -FilePath $target
-Write-Host "Running. Logs: $(Join-Path $here 'rpc.log')"
+if (-not (Test-Path -LiteralPath $launcher -PathType Leaf)) { throw "missing launcher: $launcher" }
+$nodeCommand = Get-Command node -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+if (-not $nodeCommand) { throw 'node.js 20 or newer is required' }
+& $nodeCommand.Source (Join-Path $appDirectory 'scripts\setup.js') --check
+if ($LASTEXITCODE -ne 0) { throw 'run node scripts/setup.js before enabling login startup' }
+$shortcut = $shell.CreateShortcut($linkPath)
+$shortcut.TargetPath = $scriptHost
+$shortcut.Arguments = $arguments
+$shortcut.WorkingDirectory = $appDirectory
+$shortcut.Description = 'codex and claude activity for discord'
+$shortcut.WindowStyle = 7
+$shortcut.Save()
+Write-Host 'added this app to login startup'
+if (-not $NoStart) {
+    Start-Process -FilePath $scriptHost -ArgumentList $arguments -WorkingDirectory $appDirectory -WindowStyle Hidden
+    Write-Host 'started in the background'
+}
