@@ -39,6 +39,8 @@ the installer copies this local checkout to `%LOCALAPPDATA%\CodexClaudeRPC`. it 
 
 action text comes from a fixed vocabulary. raw commands, prompts, and tool inputs never appear on discord. fast tool results keep their action visible for up to eight seconds to avoid flicker. a finished action stays visible for `doneSeconds` (20 seconds by default), then the usual idle preference applies.
 
+there is no text baked into the images. the artwork contains only logos, motion, and action pictograms; labels stay in discord's normal text fields.
+
 open [the interactive animation preview](assets/preview.html) from your local checkout to compare states and pause motion. github displays the html source; download or clone first.
 
 ## settings
