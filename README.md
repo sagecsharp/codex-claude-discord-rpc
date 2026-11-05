@@ -2,7 +2,7 @@
 
 three coding assistants, one discord presence. local activity, model-aware logos, and token usage where it is available.
 
-![codex, claude, and opencode motion preview](assets/overview.png)
+![codex, claude, and opencode motion preview](assets/overview.png?v=2)
 
 fork of [telljoe/claude-discord-rpc-dist](https://github.com/telljoe/claude-discord-rpc-dist). the original license is preserved. this fork does not update itself from the original repository.
 
@@ -42,7 +42,9 @@ the installer copies this local checkout to `%LOCALAPPDATA%\CodexClaudeRPC`. it 
 
 when codex and claude are the two active assistants, every display mode uses a split image with half of each logo. each side animates independently for working, thinking, or waiting. the split stays in place while the small action badge can alternate between assistants. once nothing is active, the paired full logos and lifetime totals return.
 
-![split logos while codex and claude are active](assets/split-working-working.gif)
+![split logos while codex and claude are active](assets/split-working-working.gif?v=2)
+
+![deepseek and glm logos on the opencode card](assets/deepseek-working.gif?v=2) ![glm logo on the opencode card](assets/glm-working.gif?v=2)
 
 `auto` follows the active provider when only one is active. the small badge shows the current action: a pencil for edits, a magnifier for searches, a checklist for tests, and a pause icon when waiting for you. `combined` also keeps both logos visible when one recent session is idle. `rotate` gives recent idle providers a turn as the main logo. opencode overrides the rotation while it is active so its model logo stays on screen. text keeps every active provider's action and usage visible in every mode. the discord member list uses the action line too.
 
