@@ -113,38 +113,31 @@ function drawSplit(codexState, claudeState, progress) {
   </svg>`;
 }
 
-const OPENCODE_ACCENTS = { opencode: '#a7b0ff', glm: '#9d8cff', deepseek: '#6f86ff' };
+const MODEL_ACCENTS = { opencode: '#a7b0ff', glm: '#9d8cff', deepseek: '#4d6bfe' };
 function drawOpencode(state, kind, progress) {
   const phase = TAU * progress;
   const pulse = (Math.sin(phase - Math.PI / 2) + 1) / 2;
-  const accent = OPENCODE_ACCENTS[kind] || OPENCODE_ACCENTS.opencode;
+  const accent = MODEL_ACCENTS[kind] || MODEL_ACCENTS.opencode;
   const quiet = state === 'idle' || state === 'waiting';
   const angle = progress * 360 - 90;
   let movement = circle(94, accent, quiet ? .1 : .18, .75);
   if (state === 'working' || state === 'thinking') {
     const sweep = state === 'working' ? 112 : 56;
     movement += arc(94, angle, sweep, accent, .88);
-    movement += arc(94, angle + 180, sweep * .44, '#dfe3ff', .3, .8);
+    movement += arc(94, angle + 180, sweep * .44, '#e8ecff', .3, .8);
     movement += arc(102, -angle + 120, 32, accent, .15, .7);
     const tip = (angle + sweep) * Math.PI / 180;
     movement += `<circle cx="${n(128 + 94 * Math.cos(tip))}" cy="${n(128 + 94 * Math.sin(tip))}" r="2" fill="#eef0ff"/>`;
   } else {
     movement += arc(94, -115, 48, accent, .22 + pulse * .22, 1.2);
   }
-  const hasModel = kind === 'glm' || kind === 'deepseek';
-  const badgeX = 190, badgeY = 190, badgeRadius = 34;
-  let marks = logo('opencode', hasModel ? 118 : 128, hasModel ? 118 : 128, hasModel ? 98 : 112);
-  if (hasModel) {
-    // A black gap keeps the small model mark distinct from the opencode frame.
-    marks += `<circle cx="${badgeX}" cy="${badgeY}" r="${badgeRadius + 6}" fill="#000000"/>`;
-    marks += `<circle cx="${badgeX}" cy="${badgeY}" r="${badgeRadius}" fill="#000000" stroke="${accent}" stroke-opacity=".55" stroke-width="1.5"/>`;
-    marks += logo(kind, badgeX, badgeY, 46);
-  }
+  const brand = kind === 'glm' || kind === 'deepseek' ? kind : 'opencode';
+  const size = brand === 'opencode' ? 106 : 116;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
     ${logoGlow}
     <rect width="256" height="256" fill="#000000"/>
     ${movement}
-    ${marks}
+    ${logo(brand, 128, 128, size)}
   </svg>`;
 }
 
@@ -185,7 +178,7 @@ if (!splitOnly) {
   for (const state of ['working', 'thinking', 'waiting', 'idle']) build(`both-${state}`, time => drawBoth(time, state));
   for (const state of ['working', 'thinking', 'waiting', 'idle']) {
     for (const kind of ['opencode', 'glm', 'deepseek']) {
-      build(`opencode${kind === 'opencode' ? '' : `-${kind}`}-${state}`, time => drawOpencode(state, kind, time));
+      build(`${kind}-${state}`, time => drawOpencode(state, kind, time));
     }
   }
   for (const action of ACTIONS) build(`action-${action}`, time => drawBadge(action, time), { width: 128, count: 48 });
@@ -199,7 +192,7 @@ fs.writeFileSync(path.join(target, 'manifest.json'), JSON.stringify({
   background: '#000000', opaque: true,
   providers: ['codex', 'claude', 'opencode'], states: ['working', 'thinking', 'waiting', 'idle'],
   combined: 'both-working', combinedStates: ['working', 'thinking', 'waiting', 'idle'],
-  modelArt: { provider: 'opencode', models: ['glm', 'deepseek'], pattern: 'opencode-{model}-{state}', defaultPattern: 'opencode-{state}' },
+  modelArt: { provider: 'opencode', models: ['glm', 'deepseek'], pattern: '{model}-{state}', defaultPattern: 'opencode-{state}' },
   sources: { brands: 'simple-icons@develop + lobehub/icons@1.102.0', opencode: 'simple-icons', deepseek: 'simple-icons', glm: 'lobehub/icons (chatglm)' },
   actionBadges: { width: 128, height: 128, frames: 48, frameDurationMs: DELAY, loopDurationMs: 2400, actions: ACTIONS },
   split: { pattern: 'split-{codexState}-{claudeState}', axis: 'vertical', left: 'codex', right: 'claude', states: splitStates, width: WIDTH, height: WIDTH, frames: FRAMES, frameDurationMs: DELAY, loopDurationMs: FRAMES * DELAY },

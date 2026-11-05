@@ -35,8 +35,8 @@ regenerate
   npm install --save-dev @resvg/resvg-js gifenc
   node scripts/generate-assets.cjs
 
-the twelve codex/claude full-logo animations, twelve opencode full-logo
-animations (plain, glm, deepseek), and nine split-logo animations are
+the twelve codex/claude full-logo animations, four plain opencode animations,
+four glm and four deepseek full-logo animations, and nine split-logo animations are
 256 x 256 pixels, 80 frames, 50ms per frame,
 and loop indefinitely every four seconds. the twelve action badges are
 128 x 128 pixels, 48 frames, 50ms per frame, and loop every 2.4 seconds.

@@ -1,6 +1,6 @@
-{
+﻿{
   "name": "codex-claude-discord-rpc",
-  "version": "4.5.0",
+  "version": "4.6.0",
   "private": true,
   "description": "dual-provider discord presence with animated codex and claude logos",
   "engines": {
@@ -19,3 +19,4 @@
     "gifenc": "1.0.3"
   }
 }
+
