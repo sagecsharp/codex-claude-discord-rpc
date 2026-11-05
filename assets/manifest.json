@@ -33,7 +33,7 @@
       "glm",
       "deepseek"
     ],
-    "pattern": "opencode-{model}-{state}",
+    "pattern": "{model}-{state}",
     "defaultPattern": "opencode-{state}"
   },
   "sources": {

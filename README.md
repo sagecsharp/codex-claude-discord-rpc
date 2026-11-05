@@ -32,10 +32,10 @@ the installer copies this local checkout to `%LOCALAPPDATA%\CodexClaudeRPC`. it 
 - the saved conversation title beside each active assistant's action.
 - both token totals on the same card when both have recent sessions.
 - when idle: both logos, all-time locally recorded tokens for each assistant, and their estimated api costs.
-- a white chatgpt knot with a mint orbit; a coral claude sun with a warm pulse; a white opencode frame with a cool orbit.
-- opencode shows whether it is using glm or deepseek: a small model badge sits in the corner of the opencode logo, and the model name stays in the text.
+- a white chatgpt knot with a mint orbit; a coral claude sun with a warm pulse; a blue deepseek whale or a purple glm mark on a cool orbit.
+- opencode shows which model it is using by putting the GLM or DeepSeek logo itself on the large card. other opencode models fall back to the opencode mark.
 - when both are active, one split logo: chatgpt on the left, claude on the right, with each half showing its own activity.
-- four animations for each provider, twelve opencode model variants (plain, glm, deepseek), four paired-logo animations, and nine split-state combinations. each is a seamless four-second, 20 fps loop.
+- four animations for codex, claude, plain opencode, glm, and deepseek, four paired-logo animations, and nine split-state combinations. each is a seamless four-second, 20 fps loop.
 - distinct action badges for editing, reading, searching, testing, terminal commands, browsing, reviewing, thinking, waiting, finished, idle, and other work.
 - an elapsed timer and an optional project folder name.
 
@@ -67,7 +67,7 @@ optional `config.json` overrides [config.example.json](config.example.json). it 
 ```
 
 - `privacy`: `minimal` shows provider, state, model, and optional usage. `project` also shows the current folder's name. prompt text, commands, file contents, and full paths are never published. `hideProjects` accepts folder globs such as `client-*`.
-- `providers`: set `codex`, `claude`, or `opencode` to false to hide that provider. opencode model badges cover glm and deepseek; other models use the plain opencode logo.
+- `providers`: set `codex`, `claude`, or `opencode` to false to hide that provider. opencode shows the glm or deepseek logo while that model is active; other models use the plain opencode logo.
 - `showTokens`: false hides usage and cost. `showWhenIdle`: true (default) shows the all-time idle card; false clears the presence when nothing is active.
 - `showConversationTitle`: true in the bundled configuration shows saved conversation titles in discord's text fields. set false to hide them. titles are shortened to fit both assistants when active together; logo hover allows more title text within discord's text limit. missing titles leave the usual action labels visible. titles are read from codex's session index and claude's explicit session/title metadata, never guessed from prompt text.
 - `images.baseUrl`: public https directory containing the bundled gifs. `images.animated: false` selects png stills. for developer portal uploads, use the png files, name keys like `codex_working`, and set `images.portal: true`.

@@ -312,11 +312,11 @@ test('disabled-provider titles stay hidden while folder privacy is independent o
 
 test('opencode activity uses the model logo while keeping opencode visible', () => {
   const deepseek = buildActivity([session('opencode', { model: 'deepseek-flash', modelKind: 'deepseek', tokens: { total: 0 }, hasUsage: false })], config({ providers: { opencode: true } }), NOW);
-  assert.match(deepseek.assets.large_image, /opencode-deepseek-working\.gif/);
+  assert.match(deepseek.assets.large_image, /deepseek-working\.gif/);
   assert.match(deepseek.details, /opencode: working · deepseek-flash$/);
   assert.equal(deepseek.state, 'opencode · deepseek-flash');
   const glm = buildActivity([session('opencode', { model: 'glm-5.3', modelKind: 'glm', tokens: { total: 0 }, hasUsage: false })], config({ providers: { opencode: true } }), NOW);
-  assert.match(glm.assets.large_image, /opencode-glm-working\.gif/);
+  assert.match(glm.assets.large_image, /glm-working\.gif/);
   assert.match(glm.details, /glm-5\.3/);
   const other = buildActivity([session('opencode', { model: 'qwen3', tokens: { total: 0 }, hasUsage: false })], config({ providers: { opencode: true } }), NOW);
   assert.match(other.assets.large_image, /opencode-working\.gif/);
@@ -338,7 +338,7 @@ test('three active providers do not use the two-provider split image', () => {
     session('opencode', { updatedAt: NOW - 1000, model: 'deepseek-flash', modelKind: 'deepseek', tokens: { total: 0 }, hasUsage: false }),
   ], config({ providers: { opencode: true }, displayMode: 'combined' }), NOW);
   assert.doesNotMatch(result.assets.large_image, /split-/);
-  assert.match(result.assets.large_image, /opencode-deepseek-working\.gif/);
+  assert.match(result.assets.large_image, /deepseek-working\.gif/);
   assert.match(result.details, /codex: working · claude: working · opencode: working/);
 });
 
