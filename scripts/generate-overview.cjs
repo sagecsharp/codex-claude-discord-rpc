@@ -38,8 +38,8 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" v
 <text x="1113" y="675" font-size="12" text-anchor="end" fill="#b1c0b5">working / thinking / waiting / idle</text><text x="1113" y="699" font-size="11" text-anchor="end" fill="#718275">256 × 256 · 20 fps · animated gif + static png</text>
 <text x="62" y="770" font-size="10" fill="#586b5c">independent integration. not affiliated with openai, anthropic, opencode, deepseek, or zhipu ai.</text><text x="1138" y="770" text-anchor="end" font-size="10" fill="#586b5c">open preview.html to see the motion</text>
 </g></svg>`;
-fs.writeFileSync(path.join(target, 'overview.png'), new Resvg(svg).render().asPng());
-console.log('overview.png: 1200 × 800');
+fs.writeFileSync(path.join(target, 'overview-opencode.png'), new Resvg(svg).render().asPng());
+console.log('overview-opencode.png: 1200 × 800');
 
 const cards = ACTIONS.map((action, index) => {
   const x = 50 + (index % 6) * 184;

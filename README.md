@@ -2,7 +2,7 @@
 
 three coding assistants, one discord presence. local activity, model-aware logos, and token usage where it is available.
 
-![codex, claude, and opencode motion preview](assets/overview.png?v=2)
+![codex, claude, and opencode motion preview](assets/overview-opencode.png)
 
 fork of [telljoe/claude-discord-rpc-dist](https://github.com/telljoe/claude-discord-rpc-dist). the original license is preserved. this fork does not update itself from the original repository.
 
