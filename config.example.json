@@ -21,9 +21,10 @@
     "baseUrl": "https://raw.githubusercontent.com/sagecsharp/codex-claude-discord-rpc/main/assets",
     "animated": true,
     "portal": false,
-    "version": "6"
+    "version": "7"
   },
   "buttons": []
 }
+
 
 
