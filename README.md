@@ -1,6 +1,6 @@
-# codex + claude for discord
+# codex + claude + opencode for discord
 
-both assistants, one discord presence. local activity and token usage with distinct, smooth logo animations.
+up to three coding assistants, one discord presence. local activity and token usage with distinct, smooth logo animations.
 
 ![codex and claude motion preview](assets/overview.png)
 
@@ -32,13 +32,14 @@ the installer copies this local checkout to `%LOCALAPPDATA%\CodexClaudeRPC`. it 
 - the saved conversation title beside each active assistant's action.
 - both token totals on the same card when both have recent sessions.
 - when idle: both logos, all-time locally recorded tokens for each assistant, and their estimated api costs.
-- a white chatgpt knot with a mint orbit; a coral claude sun with a warm pulse.
+- a white chatgpt knot with a mint orbit; a coral claude sun with a warm pulse; a white opencode frame with a cool orbit.
+- opencode shows whether it is using glm or deepseek: a small model badge sits in the corner of the opencode logo, and the model name stays in the text.
 - when both are active, one split logo: chatgpt on the left, claude on the right, with each half showing its own activity.
-- four animations for each provider, four paired-logo animations, and nine split-state combinations. each is a seamless four-second, 20 fps loop.
+- four animations for each provider, twelve opencode model variants (plain, glm, deepseek), four paired-logo animations, and nine split-state combinations. each is a seamless four-second, 20 fps loop.
 - distinct action badges for editing, reading, searching, testing, terminal commands, browsing, reviewing, thinking, waiting, finished, idle, and other work.
 - an elapsed timer and an optional project folder name.
 
-when both assistants are active, every display mode uses a split image with half of each logo. each side animates independently for working, thinking, or waiting. the split stays in place while the small action badge can alternate between assistants. once both are idle, the paired full logos and lifetime totals return.
+when codex and claude are the two active assistants, every display mode uses a split image with half of each logo. each side animates independently for working, thinking, or waiting. the split stays in place while the small action badge can alternate between assistants. once both are idle, the paired full logos and lifetime totals return.
 
 ![split logos while both assistants are active](assets/split-working-working.gif)
 
@@ -66,7 +67,7 @@ optional `config.json` overrides [config.example.json](config.example.json). it 
 ```
 
 - `privacy`: `minimal` shows provider, state, model, and optional usage. `project` also shows the current folder's name. prompt text, commands, file contents, and full paths are never published. `hideProjects` accepts folder globs such as `client-*`.
-- `providers`: set `codex` or `claude` to false to hide that provider.
+- `providers`: set `codex`, `claude`, or `opencode` to false to hide that provider. opencode model badges cover glm and deepseek; other models use the plain opencode logo.
 - `showTokens`: false hides usage and cost. `showWhenIdle`: true (default) shows the all-time idle card; false clears the presence when nothing is active.
 - `showConversationTitle`: true in the bundled configuration shows saved conversation titles in discord's text fields. set false to hide them. titles are shortened to fit both assistants when active together; logo hover allows more title text within discord's text limit. missing titles leave the usual action labels visible. titles are read from codex's session index and claude's explicit session/title metadata, never guessed from prompt text.
 - `images.baseUrl`: public https directory containing the bundled gifs. `images.animated: false` selects png stills. for developer portal uploads, use the png files, name keys like `codex_working`, and set `images.portal: true`.
@@ -77,7 +78,7 @@ discord supports animated images through public external urls. uploaded portal a
 
 ## usage and activity limits
 
-while active, usage is the sum of recent local session counters, including cached input. `usage pending` means a log has no counter yet; `≥` marks incomplete counters. inherited history in active forked sessions can overlap.
+while active, usage is the sum of recent local session counters, including cached input. opencode contributes live activity and model information only; its token history stays in opencode's own database and is not scanned for the lifetime card. `usage pending` means a log has no counter yet; `≥` marks incomplete counters. inherited history in active forked sessions can overlap.
 
 when idle, a separate history index shows all-time locally recorded tokens and estimated api cost for each assistant. it scans codex sessions and archives (including `.jsonl.zst` on node 22.15+), plus claude project and subagent transcripts. stable request/message ids and cumulative-event fingerprints remove copied and repeated usage. incomplete or inferred records remain estimates, not an account-wide billing ledger. deleted history that was never indexed, cloud-only usage, and browser chats cannot be recovered.
 
@@ -85,7 +86,7 @@ the first scan runs in a background worker. later scans run every minute, reusin
 
 costs use published api input, output, and cache rates for the recorded model, with current standard pricing where tier/context metadata is missing. these are hypothetical api costs, not subscription spending or a bill. unknown models and unknown cache-write lifetimes remain `unpriced`; a dollar amount followed by `+ unpriced` is only the priced subtotal. `≥` marks incomplete token coverage. no paid api calls or credentials are used to calculate these estimates. see [pricing sources and assumptions](PRICING.md); `node rpc.js --stats` shows local totals, per-model costs, and coverage.
 
-codex activity is inferred from local rollout events. claude uses local session metadata and transcripts, with a process-liveness check when a pid is available. compressed/archived codex logs contribute to lifetime usage but do not count as live activity. local formats can change between app versions.
+codex activity is inferred from local rollout events. claude uses local session metadata and transcripts, with a process-liveness check when a pid is available. opencode is read from its local append-only log: only key/value metadata such as session id, provider, model, and permission action is used, never prompts, file contents, or command output. compressed/archived codex logs contribute to lifetime usage but do not count as live activity. local formats can change between app versions.
 
 silent sessions become idle after `staleMs` (two minutes by default), including long-running tasks with no log events. sessions leave the card after `idleRetentionMs` (ten minutes). bounded reads keep large histories responsive. these limits are configurable.
 
@@ -113,7 +114,7 @@ npm ci
 npm run assets
 ```
 
-source vectors and their attribution are in [assets/credits.txt](assets/credits.txt). the logos identify the products; this project is not affiliated with openai or anthropic. see [license](LICENSE) and [notice](NOTICE).
+source vectors and their attribution are in [assets/credits.txt](assets/credits.txt). the logos identify the products; this project is not affiliated with openai, anthropic, opencode, deepseek, or zhipu ai. see [license](LICENSE) and [notice](NOTICE).
 
 
 this shit is all vibe coded lmfao

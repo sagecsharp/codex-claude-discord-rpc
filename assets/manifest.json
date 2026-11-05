@@ -11,7 +11,8 @@
   "opaque": true,
   "providers": [
     "codex",
-    "claude"
+    "claude",
+    "opencode"
   ],
   "states": [
     "working",
@@ -26,7 +27,21 @@
     "waiting",
     "idle"
   ],
-  "sourceVersion": "simple-icons@14.15.0",
+  "modelArt": {
+    "provider": "opencode",
+    "models": [
+      "glm",
+      "deepseek"
+    ],
+    "pattern": "opencode-{model}-{state}",
+    "defaultPattern": "opencode-{state}"
+  },
+  "sources": {
+    "brands": "simple-icons@develop + lobehub/icons@1.102.0",
+    "opencode": "simple-icons",
+    "deepseek": "simple-icons",
+    "glm": "lobehub/icons (chatglm)"
+  },
   "actionBadges": {
     "width": 128,
     "height": 128,

@@ -14,9 +14,16 @@ const WIDTH = 256;
 const FRAMES = 80;
 const DELAY = 50;
 const TAU = Math.PI * 2;
-const paths = Object.fromEntries(['chatgpt', 'claude'].map(name => {
+const BRANDS = {
+  codex: { source: 'chatgpt', color: '#f5f6f6' },
+  claude: { source: 'claude', color: '#da947b' },
+  opencode: { source: 'opencode', color: '#eef0ff' },
+  glm: { source: 'chatglm', color: '#a99bff' },
+  deepseek: { source: 'deepseek', color: '#6f86ff' },
+};
+const paths = Object.fromEntries([...new Set(Object.values(BRANDS).map(brand => brand.source))].map(name => {
   const source = fs.readFileSync(path.join(target, 'source', `${name}.svg`), 'utf8');
-  return [name, source.match(/<path d="([^"]+)"/)[1]];
+  return [name, source.match(/<path[^>]*\sd="([^"]+)"/)[1]];
 }));
 
 const n = value => Number(value.toFixed(3));
@@ -27,8 +34,9 @@ const arc = (radius, start, length, color, opacity = 1, width = 1.7) => {
   return `<path d="M${n(128 + radius * Math.cos(radians))} ${n(128 + radius * Math.sin(radians))} A${radius} ${radius} 0 ${length > 180 ? 1 : 0} 1 ${n(128 + radius * Math.cos(end))} ${n(128 + radius * Math.sin(end))}" fill="none" stroke="${color}" stroke-opacity="${n(opacity)}" stroke-width="${width}" stroke-linecap="round"/>`;
 };
 const logoGlow = '<defs><filter id="logo-glow" filterUnits="userSpaceOnUse" x="0" y="0" width="256" height="256" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="1.2"/></filter></defs>';
-const logo = (provider, x = 128, y = 128, size = 108) => {
-  const mark = `<g transform="translate(${x - size / 2} ${y - size / 2}) scale(${size / 24})"><path d="${paths[provider === 'codex' ? 'chatgpt' : 'claude']}" fill="${provider === 'codex' ? '#f5f6f6' : '#da947b'}"/></g>`;
+const logo = (brand, x = 128, y = 128, size = 108) => {
+  const { source, color } = BRANDS[brand];
+  const mark = `<g transform="translate(${x - size / 2} ${y - size / 2}) scale(${size / 24})"><path d="${paths[source]}" fill="${color}"/></g>`;
   // Blur the outer, untransformed group so the glow stays 1.2 output pixels.
   return `<g filter="url(#logo-glow)" opacity=".25">${mark}</g>${mark}`;
 };
@@ -105,6 +113,41 @@ function drawSplit(codexState, claudeState, progress) {
   </svg>`;
 }
 
+const OPENCODE_ACCENTS = { opencode: '#a7b0ff', glm: '#9d8cff', deepseek: '#6f86ff' };
+function drawOpencode(state, kind, progress) {
+  const phase = TAU * progress;
+  const pulse = (Math.sin(phase - Math.PI / 2) + 1) / 2;
+  const accent = OPENCODE_ACCENTS[kind] || OPENCODE_ACCENTS.opencode;
+  const quiet = state === 'idle' || state === 'waiting';
+  const angle = progress * 360 - 90;
+  let movement = circle(94, accent, quiet ? .1 : .18, .75);
+  if (state === 'working' || state === 'thinking') {
+    const sweep = state === 'working' ? 112 : 56;
+    movement += arc(94, angle, sweep, accent, .88);
+    movement += arc(94, angle + 180, sweep * .44, '#dfe3ff', .3, .8);
+    movement += arc(102, -angle + 120, 32, accent, .15, .7);
+    const tip = (angle + sweep) * Math.PI / 180;
+    movement += `<circle cx="${n(128 + 94 * Math.cos(tip))}" cy="${n(128 + 94 * Math.sin(tip))}" r="2" fill="#eef0ff"/>`;
+  } else {
+    movement += arc(94, -115, 48, accent, .22 + pulse * .22, 1.2);
+  }
+  const hasModel = kind === 'glm' || kind === 'deepseek';
+  const badgeX = 190, badgeY = 190, badgeRadius = 34;
+  let marks = logo('opencode', hasModel ? 118 : 128, hasModel ? 118 : 128, hasModel ? 98 : 112);
+  if (hasModel) {
+    // A black gap keeps the small model mark distinct from the opencode frame.
+    marks += `<circle cx="${badgeX}" cy="${badgeY}" r="${badgeRadius + 6}" fill="#000000"/>`;
+    marks += `<circle cx="${badgeX}" cy="${badgeY}" r="${badgeRadius}" fill="#000000" stroke="${accent}" stroke-opacity=".55" stroke-width="1.5"/>`;
+    marks += logo(kind, badgeX, badgeY, 46);
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+    ${logoGlow}
+    <rect width="256" height="256" fill="#000000"/>
+    ${movement}
+    ${marks}
+  </svg>`;
+}
+
 function build(name, drawing, { width = WIDTH, count = FRAMES, delay = DELAY } = {}) {
   const frames = [];
   for (let index = 0; index < count; index++) {
@@ -140,6 +183,11 @@ if (!splitOnly) {
     for (const state of ['working', 'thinking', 'waiting', 'idle']) build(`${provider}-${state}`, time => draw(provider, state, time));
   }
   for (const state of ['working', 'thinking', 'waiting', 'idle']) build(`both-${state}`, time => drawBoth(time, state));
+  for (const state of ['working', 'thinking', 'waiting', 'idle']) {
+    for (const kind of ['opencode', 'glm', 'deepseek']) {
+      build(`opencode${kind === 'opencode' ? '' : `-${kind}`}-${state}`, time => drawOpencode(state, kind, time));
+    }
+  }
   for (const action of ACTIONS) build(`action-${action}`, time => drawBadge(action, time), { width: 128, count: 48 });
 }
 for (const codexState of splitStates) {
@@ -149,8 +197,10 @@ fs.writeFileSync(path.join(target, 'manifest.json'), JSON.stringify({
   version: 2, width: WIDTH, height: WIDTH, frames: FRAMES, frameDurationMs: DELAY,
   loopDurationMs: FRAMES * DELAY, animatedFormat: 'gif', staticFormat: 'png',
   background: '#000000', opaque: true,
-  providers: ['codex', 'claude'], states: ['working', 'thinking', 'waiting', 'idle'],
-  combined: 'both-working', combinedStates: ['working', 'thinking', 'waiting', 'idle'], sourceVersion: 'simple-icons@14.15.0',
+  providers: ['codex', 'claude', 'opencode'], states: ['working', 'thinking', 'waiting', 'idle'],
+  combined: 'both-working', combinedStates: ['working', 'thinking', 'waiting', 'idle'],
+  modelArt: { provider: 'opencode', models: ['glm', 'deepseek'], pattern: 'opencode-{model}-{state}', defaultPattern: 'opencode-{state}' },
+  sources: { brands: 'simple-icons@develop + lobehub/icons@1.102.0', opencode: 'simple-icons', deepseek: 'simple-icons', glm: 'lobehub/icons (chatglm)' },
   actionBadges: { width: 128, height: 128, frames: 48, frameDurationMs: DELAY, loopDurationMs: 2400, actions: ACTIONS },
   split: { pattern: 'split-{codexState}-{claudeState}', axis: 'vertical', left: 'codex', right: 'claude', states: splitStates, width: WIDTH, height: WIDTH, frames: FRAMES, frameDurationMs: DELAY, loopDurationMs: FRAMES * DELAY },
 }, null, 2) + '\n');

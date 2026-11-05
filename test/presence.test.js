@@ -309,3 +309,47 @@ test('disabled-provider titles stay hidden while folder privacy is independent o
   assert.match(result.details, /Visible Saved Title/);
   assert.doesNotMatch(JSON.stringify(result), /client-secret|Disabled Secret/);
 });
+
+test('opencode activity uses the model logo while keeping opencode visible', () => {
+  const deepseek = buildActivity([session('opencode', { model: 'deepseek-flash', modelKind: 'deepseek', tokens: { total: 0 }, hasUsage: false })], config({ providers: { opencode: true } }), NOW);
+  assert.match(deepseek.assets.large_image, /opencode-deepseek-working\.gif/);
+  assert.match(deepseek.details, /opencode: working · deepseek-flash$/);
+  assert.equal(deepseek.state, 'opencode · deepseek-flash');
+  const glm = buildActivity([session('opencode', { model: 'glm-5.3', modelKind: 'glm', tokens: { total: 0 }, hasUsage: false })], config({ providers: { opencode: true } }), NOW);
+  assert.match(glm.assets.large_image, /opencode-glm-working\.gif/);
+  assert.match(glm.details, /glm-5\.3/);
+  const other = buildActivity([session('opencode', { model: 'qwen3', tokens: { total: 0 }, hasUsage: false })], config({ providers: { opencode: true } }), NOW);
+  assert.match(other.assets.large_image, /opencode-working\.gif/);
+});
+
+test('opencode usage never reports a misleading pending total beside measured providers', () => {
+  const result = buildActivity([
+    session('codex', { tokens: { total: 2400 } }),
+    session('opencode', { model: 'deepseek-flash', modelKind: 'deepseek', tokens: { total: 0 }, hasUsage: false }),
+  ], config({ providers: { opencode: true } }), NOW);
+  assert.equal(result.state, 'codex 2.4k tokens (recent sessions)');
+  assert.doesNotMatch(result.state, /opencode/);
+});
+
+test('three active providers do not use the two-provider split image', () => {
+  const result = buildActivity([
+    session('codex', { updatedAt: NOW - 3000 }),
+    session('claude', { updatedAt: NOW - 2000 }),
+    session('opencode', { updatedAt: NOW - 1000, model: 'deepseek-flash', modelKind: 'deepseek', tokens: { total: 0 }, hasUsage: false }),
+  ], config({ providers: { opencode: true }, displayMode: 'combined' }), NOW);
+  assert.doesNotMatch(result.assets.large_image, /split-/);
+  assert.match(result.assets.large_image, /opencode-deepseek-working\.gif/);
+  assert.match(result.details, /codex: working · claude: working · opencode: working/);
+});
+
+test('idle lifetime cards ignore opencode when it has no local token history', () => {
+  const history = { ready: true, providers: {
+    codex: { total: 28400000, costUSD: 51.38, unpricedTokens: 0 },
+    claude: { total: 16700000, costUSD: 79.24, unpricedTokens: 0 },
+  } };
+  const idle = buildActivity([], config({ providers: { opencode: true }, showWhenIdle: true }), NOW, history);
+  assert.equal(idle.details, 'all-time tokens · codex 28.4m · claude 16.7m');
+  assert.doesNotMatch(idle.details, /opencode/);
+  assert.doesNotMatch(idle.state, /opencode/);
+  assert.match(idle.assets.large_image, /both-idle/);
+});
