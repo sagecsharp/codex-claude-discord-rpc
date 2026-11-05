@@ -1,10 +1,11 @@
-{
+﻿{
   "clientId": "1538695178880159908",
   "privacy": "minimal",
   "hideProjects": [],
   "providers": {
     "codex": true,
-    "claude": true
+    "claude": true,
+    "opencode": true
   },
   "displayMode": "auto",
   "showTokens": true,
@@ -17,10 +18,12 @@
   "idleRetentionMs": 600000,
   "doneSeconds": 20,
   "images": {
-    "baseUrl": "https://raw.githubusercontent.com/sagecsharp/codex-claude-discord-rpc/b9817c65029d8282b8a037a789d6f189facb1c26/assets",
+    "baseUrl": "https://raw.githubusercontent.com/sagecsharp/codex-claude-discord-rpc/main/assets",
     "animated": true,
     "portal": false,
-    "version": "5"
+    "version": "6"
   },
   "buttons": []
 }
+
+

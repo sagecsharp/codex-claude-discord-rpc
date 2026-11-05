@@ -7,6 +7,7 @@ const path = require('node:path');
 const { loadConfig } = require('./lib/config');
 const { CodexReader } = require('./lib/codex');
 const { ClaudeReader } = require('./lib/claude-reader');
+const { OpencodeReader } = require('./lib/opencode');
 const { buildActivity } = require('./lib/dual-presence');
 const { DiscordIPC } = require('./lib/discord');
 const { LifetimeHistory } = require('./lib/history');
@@ -57,13 +58,15 @@ async function main() {
   if (has('--stats')) { console.log(JSON.stringify(history.value, null, 2)); return; }
   const codex = new CodexReader({ root: cfg.codexRoot || undefined, staleMs: cfg.staleMs, idleRetentionMs: cfg.idleRetentionMs });
   const claude = new ClaudeReader({ root: cfg.claudeRoot || undefined, staleMs: cfg.staleMs, retentionMs: cfg.idleRetentionMs });
+  const opencode = new OpencodeReader({ root: cfg.opencodeRoot || undefined, staleMs: cfg.staleMs, retentionMs: cfg.idleRetentionMs });
   const demoStart = Date.now();
   const snapshot = () => {
     const now = Date.now();
     const sessions = has('--demo') ? [
       { provider: 'codex', sessionId: 'demo-codex', conversationTitle: 'build a dashboard', model: 'codex', status: 'working', action: 'testing', updatedAt: now, startedAt: demoStart - 240000, tokens: { total: 28400 }, hasUsage: true },
       { provider: 'claude', sessionId: 'demo-claude', conversationTitle: 'polish the settings', model: 'claude', status: 'working', action: 'editing', updatedAt: now, startedAt: demoStart - 360000, tokens: { total: 16700 }, usageComplete: true },
-    ] : [...(cfg.providers.codex ? codex.read() : []), ...(cfg.providers.claude ? claude.read() : [])];
+      { provider: 'opencode', sessionId: 'demo-opencode', conversationTitle: 'wire up the login', model: 'deepseek-flash', modelKind: 'deepseek', status: 'working', action: 'searching', updatedAt: now, startedAt: demoStart - 120000, tokens: { total: 0 }, hasUsage: false },
+    ] : [...(cfg.providers.codex ? codex.read() : []), ...(cfg.providers.claude ? claude.read() : []), ...(cfg.providers.opencode ? opencode.read() : [])];
     return buildActivity(has('--idle') ? [] : sessions, cfg, now, history.value);
   };
   if (has('--status')) {
@@ -120,7 +123,7 @@ async function main() {
     poll = setInterval(publish, cfg.pollIntervalMs);
     if (has('--once')) onceTimeout = setTimeout(() => { log('no accepted update within 20 seconds'); shutdown(1); }, 20000);
     if (!cfg.images.baseUrl && !cfg.images.portal) log('text only: configure images.baseUrl for animated logos');
-    log('watching codex + claude; local session metadata only');
+    log('watching codex + claude + opencode; local session metadata only');
     ipc.connect();
   }
   server.on('error', (err) => {

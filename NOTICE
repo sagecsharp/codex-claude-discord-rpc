@@ -2,7 +2,7 @@ This is a modified fork of telljoe/claude-discord-rpc-dist.
 Upstream: https://github.com/telljoe/claude-discord-rpc-dist
 Copyright (c) 2026 telljoe. The upstream LICENSE is retained without alteration.
 
-Changes in this fork: dual Codex/Claude session readers and presence composition,
+Changes in this fork: Codex, Claude, and OpenCode session readers plus presence composition,
 new logo animations and preview, local-only installer, setup helper, automated
 tests, and hardened Discord IPC acknowledgement/connection handling.
 
@@ -11,5 +11,6 @@ not grant additional rights to the upstream software. Permission to modify
 the upstream project was confirmed by the person commissioning this fork.
 
 Logo sources and separate notices: assets/credits.txt and assets/source/.
-OpenAI, ChatGPT, Codex, Claude, Anthropic, and Discord marks remain with their
+OpenAI, ChatGPT, Codex, Claude, Anthropic, OpenCode, DeepSeek, ChatGLM/Zhipu AI,
+and Discord marks remain with their
 respective owners. This project is not affiliated with those organizations.
