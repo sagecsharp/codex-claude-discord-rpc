@@ -1442,6 +1442,72 @@
         }
       }
     },
+    "claude-fable-5-2": {
+      "provider": "claude",
+      "source": "claude",
+      "rates": {
+        "standard": {
+          "short": {
+            "input": 8,
+            "output": 40,
+            "cachedInput": 0.2,
+            "cacheWrite5m": 10,
+            "cacheWrite1h": 16
+          }
+        },
+        "batch": {
+          "short": {
+            "input": 4,
+            "output": 20,
+            "cachedInput": 0.1,
+            "cacheWrite5m": 5,
+            "cacheWrite1h": 8
+          }
+        },
+        "fast": {
+          "short": {
+            "input": 16,
+            "output": 80,
+            "cachedInput": 0.4,
+            "cacheWrite5m": 20,
+            "cacheWrite1h": 32
+          }
+        }
+      }
+    },
+    "claude-mythos-5-2": {
+      "provider": "claude",
+      "source": "claude",
+      "rates": {
+        "standard": {
+          "short": {
+            "input": 8,
+            "output": 40,
+            "cachedInput": 0.2,
+            "cacheWrite5m": 10,
+            "cacheWrite1h": 16
+          }
+        },
+        "batch": {
+          "short": {
+            "input": 4,
+            "output": 20,
+            "cachedInput": 0.1,
+            "cacheWrite5m": 5,
+            "cacheWrite1h": 8
+          }
+        },
+        "fast": {
+          "short": {
+            "input": 16,
+            "output": 80,
+            "cachedInput": 0.4,
+            "cacheWrite5m": 20,
+            "cacheWrite1h": 32
+          }
+        }
+      }
+    },
     "claude-fable-5-1": {
       "provider": "claude",
       "source": "claude",

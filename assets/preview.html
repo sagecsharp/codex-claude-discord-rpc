@@ -38,7 +38,7 @@
     <article class="card"><div class="card-head"><span class="label">claude</span><span class="number">02 / radiance</span></div><div class="canvas"><img id="claude" src="claude-working.gif" alt="claude sun logo with a warm traveling radiance" width="256" height="256"><img class="big-action" data-action-image src="action-editing.gif" alt="editing code"></div><div class="card-foot"><span class="foot-title"><i class="swatch warm"></i><span id="claude-desc">editing code</span></span><span class="foot-meta">logo + action badge</span></div></article>
   </section>
   <div class="bottom">
-    <section class="example" aria-label="discord card example"><div class="caption">discord card / actual badge size</div><div class="presence"><div class="badge-wrap"><img class="presence-img" id="both" src="both-idle.gif" alt="codex and claude logos together" width="66" height="66"><img class="action-badge" data-action-image src="action-editing.gif" alt="editing code"></div><div><strong>codex + claude</strong><p id="status-line">all-time tokens · codex 28.4m · claude 16.7m</p><p id="usage-line">api est. · codex $51.38 · claude $79.24</p><small id="usage-caption">local history · example data</small></div></div></section>
+    <section class="example" aria-label="discord card example"><div class="caption">discord card / actual badge size</div><div class="presence"><div class="badge-wrap"><img class="presence-img" id="both" src="both-idle.gif" alt="codex and claude logos together" width="66" height="66"><img class="action-badge" data-action-image src="action-editing.gif" alt="editing code"></div><div><strong>codex + claude</strong><p id="status-line">all-time tokens · claude 16.7m · codex 28.4m</p><p id="usage-line">claude ~$79.24 total · ~$9.87 today | codex ~$51.38 total · ~$4.12 today</p><small id="usage-caption">local history · example data</small></div></div></section>
     <section class="notes"><div class="caption">clear at 32 pixels</div><p>a pencil for edits. a magnifier for search. a pause for waiting. recognizable actions, even when the card is small.</p><div class="actual-size"><img data-action-image src="action-editing.gif" alt="editing code"><span id="actual-label">editing code · actual 32px badge</span></div></section>
   </div>
   <footer><span>independent integration. not affiliated with openai or anthropic.</span><span><a href="credits.txt">asset credits</a> / local preview</span></footer>
@@ -84,8 +84,8 @@
       const providerState = state === 'idle' ? 'idle' : splitStates[provider];
       return `${provider}: ${providerState === state ? actions[action] : actions[providerState]}${state !== 'idle' ? ` · ${demoTitles[provider]}` : ''}`;
     });
-    document.getElementById('status-line').textContent = idle ? 'all-time tokens · codex 28.4m · claude 16.7m' : activityLabels.join(' | ');
-    document.getElementById('usage-line').textContent = idle ? 'api est. · codex $51.38 · claude $79.24' : 'codex 12.4k · claude 8.2k tokens';
+    document.getElementById('status-line').textContent = idle ? 'all-time tokens · claude 16.7m · codex 28.4m' : activityLabels.join(' | ');
+    document.getElementById('usage-line').textContent = idle ? 'claude ~$79.24 total · ~$9.87 today | codex ~$51.38 total · ~$4.12 today' : 'claude ~$79.24 total · ~$9.87 today | codex ~$51.38 total · ~$4.12 today | codex 12.4k · claude 8.2k tokens';
     document.getElementById('usage-caption').textContent = `${idle ? 'local history' : 'session usage'} · example data`;
     document.querySelector('.action-badge').hidden = idle;
     document.getElementById('actual-label').textContent = `${actions[action]} · actual 32px badge`;

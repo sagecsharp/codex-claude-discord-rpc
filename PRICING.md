@@ -11,6 +11,9 @@ calls and uses no paid api calls to calculate them.
 `costUSD` is the known subtotal and `unpricedTokens` identifies the missing
 coverage. when nothing can be priced, `costUSD` is `null`. empty usage costs zero.
 display the unpriced flag alongside partial totals; never treat it as free usage.
+the discord card marks a partial total with `+` only when more than 0.1% of its
+tokens are unpriced, so a few stray tokens in billions do not pin the mark on;
+`node rpc.js --stats` still shows exact coverage.
 
 ## input contract
 
@@ -42,6 +45,9 @@ the published tier: `fast`, `ultrafast`, `batch`, or `flex`. openai's former
 `priority` name resolves to `fast`. claude's `speed: "fast"` overrides a generic
 standard service tier when fast pricing is verified for that model. missing
 or unverified tier metadata returns an explicit standard-rate assumption.
+
+the claude fable 5.2 and mythos 5.2 rows were added and verified on 2026-11-14,
+including fast mode at twice the standard rate.
 
 long-context price changes apply to the full request, only when explicit
 `contextTokens` exceeds the documented threshold. gpt models with two context

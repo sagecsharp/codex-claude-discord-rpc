@@ -11,6 +11,7 @@ const { OpencodeReader } = require('./lib/opencode');
 const { buildActivity } = require('./lib/dual-presence');
 const { DiscordIPC } = require('./lib/discord');
 const { LifetimeHistory } = require('./lib/history');
+const { localDay } = require('./lib/day');
 const argv = process.argv.slice(2);
 const has = (flag) => argv.includes(flag);
 const controlPath = process.platform === 'win32'
@@ -45,13 +46,13 @@ async function main() {
   }
   const cfg = loadConfig(__dirname, argv);
   if (has('--idle') && !has('--status') && !has('--once')) throw new Error('--idle requires --status or --once');
-  const history = new LifetimeHistory({ cacheFile: path.join(__dirname, 'cache', 'lifetime-v1.json'), roots: {
+  const history = new LifetimeHistory({ cacheDir: path.join(__dirname, 'cache', 'lifetime-v2'), legacyCacheFile: path.join(__dirname, 'cache', 'lifetime-v1.json'), roots: {
     codex: cfg.providers.codex ? cfg.codexHistoryRoot || (cfg.codexRoot ? path.dirname(cfg.codexRoot) : process.env.CODEX_HOME || path.join(os.homedir(), '.codex')) : false,
     claude: cfg.providers.claude ? cfg.claudeRoot || process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude') : false,
   } });
   if (has('--demo')) history.value = { ready: true, providers: {
-    codex: { total: 28400000, costUSD: 51.38, unpricedTokens: 0 },
-    claude: { total: 16700000, costUSD: 79.24, unpricedTokens: 0 },
+    codex: { total: 28400000, costUSD: 51.38, unpricedTokens: 0, today: { day: localDay(Date.now()), total: 2100000, costUSD: 4.12, pricedTokens: 2100000, unpricedTokens: 0, requests: 38 } },
+    claude: { total: 16700000, costUSD: 79.24, unpricedTokens: 0, today: { day: localDay(Date.now()), total: 1300000, costUSD: 9.87, pricedTokens: 1300000, unpricedTokens: 0, requests: 52 } },
   } };
   else if (has('--stats') || has('--idle')) history.value = await history.readOnce();
   else if (has('--status')) history.value = await history.readOnce(true);
@@ -62,6 +63,7 @@ async function main() {
   const demoStart = Date.now();
   const snapshot = () => {
     const now = Date.now();
+    if (has('--demo')) for (const usage of Object.values(history.value.providers)) usage.today.day = localDay(now);
     const sessions = has('--demo') ? [
       { provider: 'codex', sessionId: 'demo-codex', conversationTitle: 'build a dashboard', model: 'codex', status: 'working', action: 'testing', updatedAt: now, startedAt: demoStart - 240000, tokens: { total: 28400 }, hasUsage: true },
       { provider: 'claude', sessionId: 'demo-claude', conversationTitle: 'polish the settings', model: 'claude', status: 'working', action: 'editing', updatedAt: now, startedAt: demoStart - 360000, tokens: { total: 16700 }, usageComplete: true },

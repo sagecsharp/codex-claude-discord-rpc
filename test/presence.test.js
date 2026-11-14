@@ -2,7 +2,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { DEFAULTS } = require('../lib/config');
-const { buildActivity, summarize, asset } = require('../lib/dual-presence');
+const { buildActivity, summarize, asset, prettyModel, money } = require('../lib/dual-presence');
+const { localDay } = require('../lib/day');
 
 const NOW = Date.parse('2026-11-03T20:00:00Z');
 function config(overrides = {}) {
@@ -200,16 +201,16 @@ test('idle shows lifetime totals and prices for both providers using paired logo
   } };
   const cfg = config({ showWhenIdle: true });
   const idle = buildActivity([session('codex', { status: 'idle' })], cfg, NOW, history);
-  assert.equal(idle.details, 'all-time tokens · codex 28.4m · claude 16.7m');
-  assert.equal(idle.state, 'api est. · codex $51.38 · claude $79.24');
+  assert.equal(idle.details, 'all-time tokens · claude 16.7m · codex 28.4m');
+  assert.equal(idle.state, 'claude ~$79.24 total | codex ~$51.38 total');
   assert.match(idle.assets.large_image, /both-idle/);
   assert.equal(idle.assets.small_image, undefined);
   assert.equal(idle.timestamps, undefined);
   assert.doesNotMatch(idle.details, /1\.2k/);
-  history.providers.codex.unpricedTokens = 10;
+  history.providers.codex.unpricedTokens = 1000000;
   history.providers.claude.costUSD = null;
   const partial = buildActivity([], cfg, NOW, history);
-  assert.equal(partial.state, 'api est. · codex $51.38 + unpriced · claude unpriced');
+  assert.equal(partial.state, 'claude unpriced | codex ~$51.38+ total');
   assert.equal(buildActivity([], cfg, NOW).state, 'counting local history');
   assert.equal(buildActivity([], config({ showWhenIdle: true, showTokens: false }), NOW, history).state, 'ready when you are');
   assert.doesNotMatch(buildActivity([], config({ showWhenIdle: true, providers: { claude: false } }), NOW, history).details, /claude/);
@@ -327,7 +328,7 @@ test('opencode usage never reports a misleading pending total beside measured pr
     session('codex', { tokens: { total: 2400 } }),
     session('opencode', { model: 'deepseek-flash', modelKind: 'deepseek', tokens: { total: 0 }, hasUsage: false }),
   ], config({ providers: { opencode: true } }), NOW);
-  assert.equal(result.state, 'codex 2.4k tokens (recent sessions)');
+  assert.equal(result.state, 'codex 2.4k tokens');
   assert.doesNotMatch(result.state, /opencode/);
 });
 
@@ -348,8 +349,138 @@ test('idle lifetime cards ignore opencode when it has no local token history', (
     claude: { total: 16700000, costUSD: 79.24, unpricedTokens: 0 },
   } };
   const idle = buildActivity([], config({ providers: { opencode: true }, showWhenIdle: true }), NOW, history);
-  assert.equal(idle.details, 'all-time tokens · codex 28.4m · claude 16.7m');
+  assert.equal(idle.details, 'all-time tokens · claude 16.7m · codex 28.4m');
   assert.doesNotMatch(idle.details, /opencode/);
   assert.doesNotMatch(idle.state, /opencode/);
   assert.match(idle.assets.large_image, /both-idle/);
+});
+
+const day = localDay(NOW);
+const hist = (extra = {}) => ({ ready: true, providers: {
+  claude: { total: 4500000, costUSD: 36313.4, unpricedTokens: 0, today: { day, total: 1000, costUSD: 412.5, pricedTokens: 1000, unpricedTokens: 0, requests: 3 } },
+  codex: { total: 2800000, costUSD: 3010.2, unpricedTokens: 50000, today: { day, total: 900, costUSD: 2.1, pricedTokens: 800, unpricedTokens: 100, requests: 2 } },
+  ...extra,
+} });
+
+test('single claude card shows unlabeled total, today and token count', () => {
+  const result = buildActivity([session('claude', { tokens: { total: 4500000 } })], config(), NOW, hist());
+  assert.equal(result.state, '~$36,313 total · ~$413 today · 4.5m tokens');
+  const partial = buildActivity([session('claude', { tokens: { total: 4500000 }, usageComplete: false })], config(), NOW, hist());
+  assert.equal(partial.state, '~$36,313 total · ~$413 today · ≥4.5m tokens');
+  const fresh = buildActivity([session('claude', { tokens: { total: 0 }, hasUsage: false })], config(), NOW, hist());
+  assert.equal(fresh.state, '~$36,313 total · ~$413 today');
+});
+
+test('claude cost stays pinned on a codex card, then codex, then tokens', () => {
+  const result = buildActivity([session('codex')], config(), NOW, hist());
+  assert.equal(result.state, 'claude ~$36,313 total · ~$413 today | codex ~$3,010+ total · ~$2.10+ today | codex 1.2k tokens');
+  assert.ok(result.state.length <= 128);
+});
+
+test('alwaysShowCost controls which providers keep a cost on the card', () => {
+  const none = buildActivity([session('codex')], config({ alwaysShowCost: [] }), NOW, hist());
+  assert.equal(none.state, '~$3,010+ total · ~$2.10+ today · 1.2k tokens');
+  assert.doesNotMatch(none.state, /claude/);
+  const off = buildActivity([session('codex')], config({ providers: { claude: false } }), NOW, hist());
+  assert.doesNotMatch(off.state, /claude/);
+  assert.match(off.state, /^~\$3,010\+ total/);
+  assert.equal(buildActivity([session('opencode', { model: 'deepseek-flash', tokens: { total: 0 }, hasUsage: false })], config({ providers: { opencode: true } }), NOW, hist()).state,
+    'claude ~$36,313 total · ~$413 today');
+});
+
+test('a previous day today bucket renders zero and a missing bucket renders only the total', () => {
+  const old = hist({ claude: { total: 4500000, costUSD: 10, unpricedTokens: 0, today: { day: '2000-01-01', total: 9, costUSD: 99, pricedTokens: 9, unpricedTokens: 0, requests: 1 } } });
+  assert.match(buildActivity([session('claude')], config(), NOW, old).state, /^~\$10\.00 total · ~\$0\.00 today · /);
+  const bare = hist({ claude: { total: 4500000, costUSD: 10, unpricedTokens: 0 } });
+  assert.equal(buildActivity([session('claude')], config(), NOW, bare).state, '~$10.00 total · 1.2k tokens');
+});
+
+test('unpriced tokens add a plus and unpriced providers drop out of active cards', () => {
+  const plus = hist({ claude: { total: 1, costUSD: 3010.2, unpricedTokens: 7, today: { day, total: 1, costUSD: 2.1, unpricedTokens: 1 } } });
+  assert.match(buildActivity([session('claude')], config(), NOW, plus).state, /^~\$3,010\+ total · ~\$2\.10\+ today/);
+  const unpriced = hist({ claude: { total: 1, costUSD: null, unpricedTokens: 7, today: { day, costUSD: null, unpricedTokens: 7 } } });
+  const active = buildActivity([session('codex')], config(), NOW, unpriced);
+  assert.doesNotMatch(active.state, /claude/);
+  const idle = buildActivity([], config({ showWhenIdle: true }), NOW, unpriced);
+  assert.match(idle.state, /^claude unpriced \| codex ~\$3,010\+ total/);
+  const todayOnly = hist({ claude: { total: 1, costUSD: 5, unpricedTokens: 0, today: { day, costUSD: null, unpricedTokens: 3 } } });
+  assert.match(buildActivity([session('claude')], config(), NOW, todayOnly).state, /^~\$5\.00 total · today unpriced/);
+});
+
+test('a negligible unpriced share does not add a plus', () => {
+  const stray = hist({ claude: { total: 96e9, costUSD: 38456.9, unpricedTokens: 168967, today: { day, total: 185e6, costUSD: 157.2, pricedTokens: 185e6 - 9, unpricedTokens: 9, requests: 1325 } } });
+  assert.equal(buildActivity([session('claude')], config(), NOW, stray).state, '~$38,457 total · ~$157 today · 1.2k tokens');
+  const real = hist({ claude: { total: 1000, costUSD: 5, unpricedTokens: 2, today: { day, total: 1000, costUSD: 1, unpricedTokens: 1 } } });
+  assert.equal(buildActivity([session('claude')], config(), NOW, real).state, '~$5.00+ total · ~$1.00 today · 1.2k tokens');
+});
+
+test('missing or unready history falls back to the plain token text', () => {
+  for (const history of [undefined, { ready: false, providers: hist().providers }]) {
+    assert.equal(buildActivity([session('codex')], config(), NOW, history).state, 'codex 1.2k tokens');
+  }
+});
+
+test('hidden tokens never show a cost', () => {
+  const result = buildActivity([session('claude')], config({ showTokens: false }), NOW, hist());
+  assert.equal(result.state, '1 recent session');
+  assert.doesNotMatch(buildActivity([], config({ showTokens: false, showWhenIdle: true }), NOW, hist()).state, /\$/);
+});
+
+test('worst-case cost text never exceeds the limit and drops tokens instead of cutting a cost', () => {
+  const big = { total: 9e9, costUSD: 98765432.1, unpricedTokens: 5e8, today: { day, costUSD: 12345678.9, unpricedTokens: 5 } };
+  const result = buildActivity([session('codex'), session('claude')], config(), NOW, hist({ claude: big, codex: big }));
+  assert.ok(result.state.length <= 128);
+  assert.doesNotMatch(result.state, /tokens/);
+  assert.equal(result.state, 'claude ~$98,765,432+ total · ~$12,345,679+ today | codex ~$98,765,432+ total · ~$12,345,679+ today');
+});
+
+test('claude model ids are prettified and the card shows them', () => {
+  const result = buildActivity([session('claude', { action: 'searching', model: 'claude-fable-5-2' })], config(), NOW);
+  assert.equal(result.details, 'claude: searching code · fable 5.2');
+});
+
+test('money formats whole dollars, cents and tiny amounts', () => {
+  for (const [value, text] of [[36313.4, '$36,313'], [1234.56, '$1,235'], [100, '$100'], [99.996, '$100'], [99.99, '$99.99'], [79.244, '$79.24'], [0, '$0.00'], [0.004, '<$0.01'], [0.01, '$0.01']]) {
+    assert.equal(money(value), text);
+  }
+});
+
+test('prettyModel only rewrites claude ids', () => {
+  for (const [model, provider, text] of [
+    ['claude-fable-5-2', 'claude', 'fable 5.2'], ['claude-opus-5-5', 'claude', 'opus 5.5'],
+    ['claude-haiku-4-5-20251001', 'claude', 'haiku 4.5'], ['claude-opus-5', 'claude', 'opus 5'],
+    ['claude-3-5-sonnet-20241022', 'claude', 'sonnet 3.5'], ['claude-opus-5-5[1m]', 'claude', 'opus 5.5'],
+    ['claude', 'claude', 'claude'], ['claude-mystery', 'claude', 'mystery'], ['gpt-6-astra', 'codex', 'gpt-6-astra'],
+    ['deepseek-flash', 'opencode', 'deepseek-flash'], [undefined, 'claude', ''], ['', 'codex', ''],
+  ]) assert.equal(prettyModel(model, provider), text);
+});
+
+test('idle card pins claude first in both lines', () => {
+  const idle = buildActivity([], config({ showWhenIdle: true }), NOW, hist());
+  assert.equal(idle.details, 'all-time tokens · claude 4.5m · codex 2.8m');
+  assert.equal(idle.state, 'claude ~$36,313 total · ~$413 today | codex ~$3,010+ total · ~$2.10+ today');
+  const codexFirst = buildActivity([], config({ showWhenIdle: true, alwaysShowCost: [] }), NOW, hist());
+  assert.equal(codexFirst.details, 'all-time tokens · codex 2.8m · claude 4.5m');
+});
+
+test('an opencode-only idle card never sends an empty line', () => {
+  const cfg = config({ showWhenIdle: true, providers: { codex: false, claude: false, opencode: true } });
+  const empty = { ready: true, providers: { codex: { total: 0, costUSD: 0, unpricedTokens: 0 }, claude: { total: 0, costUSD: 0, unpricedTokens: 0 } } };
+  for (const history of [empty, { ready: true, providers: {} }]) {
+    const idle = buildActivity([], cfg, NOW, history);
+    assert.equal(idle.details, 'opencode · idle');
+    assert.equal(idle.state, 'ready when you are');
+    assert.equal(idle.assets.large_text, 'ready when you are');
+  }
+  assert.equal(buildActivity([], cfg, NOW).state, 'counting local history');
+});
+
+test('a pinned provider with no history stays off the card', () => {
+  const zero = { total: 0, costUSD: 0, unpricedTokens: 0, today: { day, total: 0, costUSD: 0, pricedTokens: 0, unpricedTokens: 0, requests: 0 } };
+  const codexOnly = buildActivity([session('codex')], config(), NOW, hist({ claude: zero }));
+  assert.equal(codexOnly.state, '~$3,010+ total · ~$2.10+ today · 1.2k tokens');
+  const opencode = buildActivity([session('opencode', { model: 'deepseek-flash', tokens: { total: 0 }, hasUsage: false })], config({ providers: { opencode: true } }), NOW, hist({ claude: zero, codex: zero }));
+  assert.equal(opencode.state, 'opencode · deepseek-flash');
+  const fresh = buildActivity([session('claude')], config(), NOW, hist({ claude: zero }));
+  assert.equal(fresh.state, '~$0.00 total · ~$0.00 today · 1.2k tokens');
 });

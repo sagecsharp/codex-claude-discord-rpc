@@ -59,6 +59,29 @@ test('Claude fast speed overrides generic standard service tier', () => {
   assert.equal(estimateRecord(request).tier, 'fast');
 });
 
+test('prices claude-fable-5-2 standard input, output, cache reads and both write TTLs', () => {
+  const result = estimateRecord({ provider: 'claude', model: 'claude-fable-5-2', input: 1_000_000, cachedInput: 500_000, cacheWrite5m: 100_000, cacheWrite1h: 100_000, output: 100_000, serviceTier: 'standard' });
+  near(result.costUSD, 9.1); // 2.4 uncached + .1 read + 1 5m + 1.6 1h + 4 output.
+  assert.equal(result.pricedTokens, 1_100_000);
+  assert.equal(result.unpricedTokens, 0);
+});
+
+test('claude-fable-5-2 fast speed and batch tier use their own rates', () => {
+  const request = { provider: 'claude', model: 'claude-fable-5-2', input: 100_000, output: 10_000, serviceTier: 'standard' };
+  near(estimateRecord(request).costUSD, 1.2);
+  const fast = estimateRecord({ ...request, speed: 'fast' });
+  near(fast.costUSD, 2.4);
+  assert.equal(fast.tier, 'fast');
+  near(estimateRecord({ ...request, serviceTier: 'batch' }).costUSD, .6);
+});
+
+test('claude-mythos-5-2 resolves with the same rates as fable 5.2', () => {
+  const request = { provider: 'claude', model: 'claude-mythos-5-2', input: 1_000_000, output: 1_000_000 };
+  near(estimateRecord(request).costUSD, 48);
+  near(estimateRecord({ ...request, speed: 'fast' }).costUSD, 96);
+  near(estimateRecord({ ...request, serviceTier: 'batch' }).costUSD, 24);
+});
+
 test('Haiku 5.5 uses its 100k request threshold, other current Claude models do not', () => {
   const request = { model: 'claude-haiku-5-5', input: 100_001, cachedInput: 50_000, output: 10_000 };
   near(estimateRecord({ ...request, contextTokens: 100_000 }).costUSD, .0105001);

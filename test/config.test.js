@@ -35,3 +35,16 @@ test('image credentials and query strings cannot leak through the asset url', (t
     assert.throws(() => loadConfig(root, [], {}));
   }
 });
+
+test('alwaysShowCost defaults to claude, accepts codex and claude, and rejects anything else', (t) => {
+  const root = fixture(t), file = path.join(root, 'config.json');
+  assert.deepEqual(loadConfig(root, [], {}).alwaysShowCost, ['claude']);
+  fs.writeFileSync(file, JSON.stringify({ alwaysShowCost: ['codex', 'claude'] }));
+  assert.deepEqual(loadConfig(root, [], {}).alwaysShowCost, ['codex', 'claude']);
+  fs.writeFileSync(file, JSON.stringify({ alwaysShowCost: [] }));
+  assert.deepEqual(loadConfig(root, [], {}).alwaysShowCost, []);
+  for (const value of ['claude', ['opencode'], [1], null, {}]) {
+    fs.writeFileSync(file, JSON.stringify({ alwaysShowCost: value }));
+    assert.throws(() => loadConfig(root, [], {}), /alwaysShowCost must be an array of codex and\/or claude/);
+  }
+});

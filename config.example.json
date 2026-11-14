@@ -9,6 +9,7 @@
   },
   "displayMode": "auto",
   "showTokens": true,
+  "alwaysShowCost": ["claude"],
   "showWhenIdle": true,
   "showConversationTitle": true,
   "activityType": 3,
