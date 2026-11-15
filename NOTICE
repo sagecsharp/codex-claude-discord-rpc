@@ -3,14 +3,15 @@ Upstream: https://github.com/telljoe/claude-discord-rpc-dist
 Copyright (c) 2026 telljoe. The upstream LICENSE is retained without alteration.
 
 Changes in this fork: Codex, Claude, and OpenCode session readers plus presence composition,
-new logo animations and preview, local-only installer, setup helper, automated
+new pixel art animations and preview, local-only installer, setup helper, automated
 tests, and hardened Discord IPC acknowledgement/connection handling.
 
 The original project's license is not an open-source license. This fork does
 not grant additional rights to the upstream software. Permission to modify
 the upstream project was confirmed by the person commissioning this fork.
 
-Logo sources and separate notices: assets/credits.txt and assets/source/.
-OpenAI, ChatGPT, Codex, Claude, Anthropic, OpenCode, DeepSeek, ChatGLM/Zhipu AI,
+Art credits and separate notices: assets/credits.txt. The art is original pixel
+art drawn for this fork; the characters it depicts belong to their owners.
+OpenAI, ChatGPT, Codex, Claude, Clawd, Anthropic, OpenCode, DeepSeek, Z.ai/Zhipu AI,
 and Discord marks remain with their
 respective owners. This project is not affiliated with those organizations.

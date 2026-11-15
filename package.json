@@ -2,7 +2,7 @@
   "name": "codex-claude-discord-rpc",
   "version": "4.7.0",
   "private": true,
-  "description": "dual-provider discord presence with animated codex and claude logos",
+  "description": "discord presence for codex, claude and opencode with pixel art mascots",
   "engines": {
     "node": ">=20"
   },

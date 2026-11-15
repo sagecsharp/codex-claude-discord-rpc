@@ -1,57 +1,40 @@
 asset credits
 
-original animation design and composition for this project.
-the brand silhouettes are kept recognizable; animation uses crisp orbit strokes.
+everything in this folder is original pixel art drawn in code for this project
+(scripts/pixel-art.cjs and scripts/action-art.cjs). no official image files are
+copied or traced. the characters are fan redraws of each product's own mascot
+where it has one:
 
-chatgpt / openai silhouette:
-https://raw.githubusercontent.com/simple-icons/simple-icons/14.15.0/icons/openai.svg
-https://openai.com/brand/
+claude: clawd, the claude code mascot, redrawn from the terminal welcome art.
+https://github.com/anthropics/claude-code
 
-claude silhouette:
-https://raw.githubusercontent.com/simple-icons/simple-icons/14.15.0/icons/claude.svg
-https://www.anthropic.com/
+codex: the default pet from the codex app (a cloud head with a terminal face).
+https://github.com/openai/codex
 
-opencode silhouette:
-https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/opencode.svg
-https://opencode.ai/
-
-deepseek silhouette:
-https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/deepseek.svg
+deepseek: its whale logo, drawn as a little whale.
 https://www.deepseek.com/
 
-glm / chatglm silhouette:
-https://github.com/lobehub/lobe-icons/blob/master/packages/static-svg/icons/chatglm.svg
+opencode: no mascot, so its block "o" logo mark.
+https://opencode.ai/brand
+
+glm / z.ai: no mascot, so the z.ai "z" tile.
 https://z.ai/
 
-simple icons is distributed under cc0 1.0 universal:
-https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md
-lobehub icons is distributed under the mit license:
-https://github.com/lobehub/lobe-icons/blob/master/LICENSE
-the pinned source svg files are included in source/.
-brand and trademark rights remain with their respective owners.
-this is an independent integration, not affiliated with or endorsed by openai, anthropic, opencode, deepseek, or zhipu ai.
+brand, character and trademark rights remain with their owners.
+this is an independent fan project, not affiliated with or endorsed by
+openai, anthropic, opencode (anomaly), deepseek, or zhipu ai / z.ai.
+if an owner wants a character removed, open an issue.
 
 regenerate
-  npm install --save-dev @resvg/resvg-js gifenc
-  node scripts/generate-assets.cjs
+  npm ci
+  npm run assets
 
-the twelve codex/claude full-logo animations, four plain opencode animations,
-four glm and four deepseek full-logo animations, and nine split-logo animations are
-256 x 256 pixels, 80 frames, 50ms per frame,
-and loop indefinitely every four seconds. the twelve action badges are
-128 x 128 pixels, 48 frames, 50ms per frame, and loop every 2.4 seconds.
-all action pictograms are original vector drawings. the discord image assets
-contain no text: only the brand logos, motion, and separate action pictograms.
-action badges stay bold enough for a 32px thumbnail. action wording belongs
-in the discord text fields, not inside the images.
-png files are static fallbacks.
-the split variants clip the chatgpt mark to the left half and claude to the
-right half, with independently animated working, thinking, and waiting states.
-regenerate only these variants with node scripts/generate-assets.cjs --split-only.
-all discord image backgrounds are fully opaque pure black, including corners.
-a faint 1.2px edge glow is confined to the brand logo silhouettes. orbit lines
-and action pictograms have no blur, ambient gradients, or colored backdrop fills.
-each animated file uses a single palette across the whole loop to avoid color
-flicker, with exact black reserved for untouched background pixels.
+the big images (one per character and state, plus codex and claude together)
+are 256 x 256 pixels, 16 frames, 120ms per frame, a loop just under two seconds.
+the twelve action badges are 128 x 128 pixels with the same timing. discord crops badges to a circle, so each icon stays in
+the middle of its tile. there is no text inside the images. action wording
+belongs in the discord text fields.
+png files are stills for when animation is off.
+every gif uses one exact palette for the whole loop, so colors never flicker.
 gif assets need public https hosting for discord; local file paths do not work in rich presence.
-the preview includes a pause control and honors the system reduced-motion preference.
+the preview page has a pause button and honors the system reduced-motion preference.

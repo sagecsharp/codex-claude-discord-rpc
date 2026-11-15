@@ -74,7 +74,7 @@ async function main() {
   if (has('--status')) {
     const activity = snapshot();
     if (has('--json')) console.log(JSON.stringify(activity, null, 2));
-    else console.log(activity ? `${activity.details}\n${activity.state}\nimage: ${activity.assets?.large_image || 'configure images.baseUrl for animated logos'}` : 'no recent sessions; discord presence would be cleared');
+    else console.log(activity ? `${activity.details}\n${activity.state}\nimage: ${activity.assets?.large_image || 'configure images.baseUrl for the pixel art'}` : 'no recent sessions; discord presence would be cleared');
     return;
   }
   if (!/^\d{17,20}$/.test(cfg.clientId)) throw new Error('run node scripts/setup.js and enter your discord application id first');
@@ -124,7 +124,7 @@ async function main() {
     ipc.onReject = (err) => { if (has('--once')) { log(`discord rejected the activity: ${err.message}`); shutdown(1); } };
     poll = setInterval(publish, cfg.pollIntervalMs);
     if (has('--once')) onceTimeout = setTimeout(() => { log('no accepted update within 20 seconds'); shutdown(1); }, 20000);
-    if (!cfg.images.baseUrl && !cfg.images.portal) log('text only: configure images.baseUrl for animated logos');
+    if (!cfg.images.baseUrl && !cfg.images.portal) log('text only: configure images.baseUrl for the pixel art');
     log('watching codex + claude + opencode; local session metadata only');
     ipc.connect();
   }

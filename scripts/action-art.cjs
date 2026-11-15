@@ -1,53 +1,231 @@
 'use strict';
 
-// Original, deliberately bold symbols. These are read at 24–32px in Discord.
+// small pixel badges. discord crops these to a circle about 32px wide, so each
+// icon lives in the middle 12 x 12 of a 16 x 16 grid and keeps its corners empty.
+const { Grid, GLYPHS, PAPER } = require('./pixel-art.cjs');
+
 const ACTIONS = ['working', 'thinking', 'editing', 'reading', 'searching', 'testing', 'terminal', 'browsing', 'reviewing', 'waiting', 'done', 'idle'];
 const COLORS = {
-  working: '#a4e7d5', thinking: '#c8b9f2', editing: '#9fe0c1', reading: '#a9d6ee',
-  searching: '#a7dcf4', testing: '#b1e29d', terminal: '#b2c7ec', browsing: '#b8baf0',
-  reviewing: '#e6cc9a', waiting: '#efc18c', done: '#9fe0b6', idle: '#a3ada8',
+  working: '#ffb86b', thinking: '#c8b9f2', editing: '#ffd166', reading: '#a9d6ee',
+  searching: '#8fe9ff', testing: '#9be28a', terminal: '#c9ced8', browsing: '#7fb4ff',
+  reviewing: '#f2a7c8', waiting: '#efc18c', done: '#8fe6a8', idle: '#b7b3d9',
 };
-const n = value => Number(value.toFixed(3));
-const TAU = Math.PI * 2;
+const BADGE_FRAMES = 16;
 
-function icon(action, progress = 0) {
-  const wave = Math.sin(progress * TAU);
-  switch (action) {
-    case 'thinking':
-      return [38, 64, 90].map((x, i) => `<circle cx="${x}" cy="${n(65 - 4 * Math.sin(progress * TAU - i * .7))}" r="8" stroke="none" fill="currentColor" opacity="${n(.55 + .45 * (Math.sin(progress * TAU - i * .7) + 1) / 2)}"/>`).join('');
-    case 'editing':
-      return `<g transform="translate(${n(wave * 2)} ${n(-wave * 2)})"><path d="m39 81 8-23 35-35 21 21-35 35-23 8Z"/><path d="m74 31 21 21M47 58l21 21"/></g><path d="M31 99h64" stroke-width="6" opacity=".6"/>`;
-    case 'reading':
-      return '<path d="M64 36c-13-9-25-10-40-5v60c15-5 27-4 40 5 13-9 25-10 40-5V31c-15-5-27-4-40 5v60"/><path d="M36 48h15M36 63h15M78 48h14M78 63h14" stroke-width="5" opacity=".6"/>';
-    case 'searching':
-      return `<g transform="translate(${n(wave * 3)} ${n(Math.cos(progress * TAU) * 2)})"><circle cx="55" cy="54" r="26"/><path d="m75 75 25 25" stroke-width="11"/></g>`;
-    case 'testing':
-      return '<path d="M37 27h59v76H32V27Z"/><path d="m42 48 6 6 11-13m-17 37 6 6 11-13M71 49h12M71 79h12" stroke-width="6"/>';
-    case 'terminal':
-      return `<rect x="23" y="30" width="82" height="70" rx="11"/><path d="m39 49 16 15-16 15"/><path d="M68 80h17" opacity="${n(.62 + .38 * (wave + 1) / 2)}"/>`;
-    case 'browsing':
-      return '<circle cx="64" cy="64" r="39"/><ellipse cx="64" cy="64" rx="17" ry="39" stroke-width="5"/><path d="M27 64h74M35 41h58M35 87h58" stroke-width="5"/>';
-    case 'reviewing':
-      return '<path d="M34 23h45l18 18v64H34Z"/><path d="M77 25v20h18M46 59h17M54.5 50.5v17M46 86h17M78 59h7M78 86h7" stroke-width="6"/>';
-    case 'waiting':
-      return '<rect x="36" y="30" width="18" height="68" rx="5" fill="currentColor" stroke="none"/><rect x="74" y="30" width="18" height="68" rx="5" fill="currentColor" stroke="none"/>';
-    case 'done':
-      return '<circle cx="64" cy="64" r="40" stroke-width="6" opacity=".45"/><path d="m39 65 17 17 35-38" stroke-width="11"/>';
-    case 'idle':
-      return '<path d="M77 24a41 41 0 1 0 28 56A40 40 0 0 1 77 24Z"/>';
-    default:
-      return `<g transform="rotate(${n(progress * 360)} 64 64)"><path d="m55 22-3 12-10 5-12-3-10 18 9 9v11l-9 9 10 18 12-3 10 5 3 12h20l3-12 10-5 12 3 10-18-9-9V63l9-9-10-18-12 3-10-5-3-12Z" transform="translate(0 -4) scale(1 .95)" stroke-width="7"/><circle cx="65" cy="64" r="15" stroke-width="7"/></g>`;
-  }
+function mix(a, b, amount) {
+  const channel = (hex, index) => parseInt(hex.slice(1 + index * 2, 3 + index * 2), 16);
+  return `#${[0, 1, 2].map(index => Math.round(channel(a, index) * (1 - amount) + channel(b, index) * amount).toString(16).padStart(2, '0')).join('')}`;
 }
+
+// each icon returns { sprite, x, y } or a list of them for the given frame.
+const ICONS = {
+  working(frame) {
+    const flash = frame % 8 >= 4;
+    const bolt = [
+      '....#####.',
+      '...#####..',
+      '..#####...',
+      '.########.',
+      '....####..',
+      '...####...',
+      '..####....',
+      '.###......',
+      '.#........',
+    ];
+    return [{ sprite: bolt, x: 1, y: flash ? 1 : 2 }, { sprite: ['y'], x: flash ? 0 : 1, y: flash ? 2 : 4 }, { sprite: ['y'], x: flash ? 11 : 10, y: flash ? 9 : 7 }];
+  },
+  thinking(frame) {
+    const dots = Math.min(3, Math.floor(frame / 4) % 4 + 1);
+    const cloud = [
+      '..########..',
+      '.##########.',
+      '############',
+      '############',
+      '############',
+      '.##########.',
+      '..########..',
+      '..##........',
+      '.#..........',
+    ];
+    const row = ['k', 'k', 'k'].map((dot, index) => (index < dots ? dot : '.')).join('..');
+    return [{ sprite: cloud, x: 0, y: 1 }, { sprite: [row, row], x: 2, y: 3 }];
+  },
+  editing(frame) {
+    const step = frame % 8 >= 4 ? 1 : 0;
+    const pencil = [
+      '.......##.',
+      '......####',
+      '.....####.',
+      '....####..',
+      '...####...',
+      '..####....',
+      '.w###.....',
+      'www#......',
+      'kww.......',
+    ];
+    const line = ['o'.repeat(3 + (Math.floor(frame / 2) % 8))];
+    return [{ sprite: line, x: 1, y: 11 }, { sprite: pencil, x: 1 + step, y: 1 - step }];
+  },
+  reading(frame) {
+    const lines = Math.floor(frame / 4) % 4;
+    const text = shown => (shown ? 'kk' : 'ww');
+    return [{ x: 1, y: 2, sprite: [
+      '.###..###.',
+      `#kkw##w${text(lines >= 2)}#`,
+      '#www##www#',
+      `#${text(lines >= 1)}w##w${text(lines >= 3)}#`,
+      '#www##www#',
+      `#${text(lines >= 1)}w##w${text(lines >= 3)}#`,
+      '#www##www#',
+      '.########.',
+    ] }];
+  },
+  searching(frame) {
+    const [dx, dy] = [[0, 0], [1, 0], [1, 1], [0, 1]][Math.floor(frame / 4) % 4];
+    return [{ x: dx, y: dy, sprite: [
+      '...####.....',
+      '..#gggg#....',
+      '.#gwgggg#...',
+      '.#wggggg#...',
+      '.#gggggg#...',
+      '.#gggggg#...',
+      '..#gggg#....',
+      '...#####....',
+      '.......##...',
+      '........##..',
+      '.........#..',
+    ] }];
+  },
+  testing(frame) {
+    const pop = Math.floor(frame / 4) % 2;
+    return [{ x: 1, y: 0, sprite: [
+      pop ? '....w.....' : '..........',
+      pop ? '..........' : '.....w....',
+      '...####...',
+      '....##....',
+      '....##....',
+      '...#..#...',
+      '...#..#...',
+      pop ? '..#gwgg#..' : '..#gggg#..',
+      pop ? '.#gggggg#.' : '.#ggggwg#.',
+      pop ? '.#ggggwg#.' : '.#gwgggg#.',
+      '.########.',
+    ] }];
+  },
+  terminal(frame) {
+    const cursor = frame % 8 < 4 ? 'www' : 'kkk';
+    return [{ x: 1, y: 2, sprite: [
+      '.########.',
+      '#oooooooo#',
+      '#kkkkkkkk#',
+      '#kwkkkkkk#',
+      '#kkwkkkkk#',
+      `#kwk${cursor}kk#`,
+      '#kkkkkkkk#',
+      '.########.',
+    ] }];
+  },
+  browsing(frame) {
+    const turn = Math.floor(frame / 4) % 2;
+    return [{ x: 1, y: 1, sprite: turn ? [
+      '...####...',
+      '..#l####..',
+      '.#lll###l.',
+      '.#ll###ll.',
+      '##l####lll',
+      '#######ll#',
+      '####l###l#',
+      '.##lll###.',
+      '..#ll###..',
+      '...####...',
+    ] : [
+      '...####...',
+      '..###l##..',
+      '.###lll##.',
+      '.###ll###.',
+      'l####l####',
+      'll########',
+      'l#####l###',
+      '.####lll#.',
+      '..###ll#..',
+      '...####...',
+    ] }];
+  },
+  reviewing(frame) {
+    if (frame === 15) return [{ x: 0, y: 5, sprite: ['.##########.', '..########..'] }];
+    const look = [0, 0, 1, 1, 0, 0, -1, -1][Math.floor(frame / 2) % 8];
+    const eye = [
+      '...######...',
+      '..#wwwwww#..',
+      '.#wwwwwwww#.',
+      '#wwwwwwwwww#',
+      '.#wwwwwwww#.',
+      '..#wwwwww#..',
+      '...######...',
+    ];
+    return [{ sprite: eye, x: 0, y: 2 }, { sprite: ['.kk.', 'kkkk', '.kk.'], x: 4 + look, y: 4 }];
+  },
+  waiting(frame) {
+    const stage = Math.floor(frame / 4) % 4;
+    const top = [['ssss', 'ssss', 'ss'], ['....', 'ssss', 'ss'], ['....', '....', 'ss'], ['....', '....', '..']][stage];
+    const bottom = [['..', '....', '....'], ['..', '....', 'ssss'], ['..', '.ss.', 'ssss'], ['ss', 'ssss', 'ssss']][stage];
+    return [{ x: 2, y: 1, sprite: [
+      '########',
+      `.#${top[0]}#.`,
+      `.#${top[1]}#.`,
+      `..#${top[2]}#..`,
+      stage < 3 ? '...ss...' : '...##...',
+      `..#${bottom[0]}#..`,
+      `.#${bottom[1]}#.`,
+      `.#${bottom[2]}#.`,
+      '########',
+    ] }];
+  },
+  done(frame) {
+    const twinkle = Math.floor(frame / 4) % 2;
+    const check = [
+      '.........#',
+      '........##',
+      '.......###',
+      '#.....###.',
+      '##...###..',
+      '###.###...',
+      '.#####....',
+      '..###.....',
+      '...#......',
+    ];
+    return [{ sprite: check, x: 1, y: 2 }, { sprite: twinkle ? ['y'] : ['.y.', 'y.y', '.y.'], x: twinkle ? 3 : 2, y: twinkle ? 2 : 1 }];
+  },
+  idle(frame) {
+    const count = Math.floor(frame / 4) % 4;
+    const moon = [
+      '...####...',
+      '..###.....',
+      '.###......',
+      '.###......',
+      '.###......',
+      '.####....#',
+      '..########',
+      '...######.',
+    ];
+    const parts = [{ sprite: moon, x: 0, y: 3 }];
+    if (count >= 1) parts.push({ sprite: GLYPHS.z.map(row => row.replaceAll('#', 'w')), x: 8, y: count >= 3 ? 0 : 1 });
+    return parts;
+  },
+};
 
 function drawBadge(action, progress) {
-  const color = COLORS[action] || COLORS.working;
-  const outlineOpacity = .24 + (Math.sin(progress * TAU) + 1) * .05;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-    <rect width="128" height="128" fill="#000000"/>
-    <circle cx="64" cy="64" r="60" fill="none" stroke="${color}" stroke-opacity="${n(outlineOpacity)}" stroke-width="2"/>
-    <g fill="none" stroke="${color}" color="${color}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">${icon(action, progress)}</g>
-  </svg>`;
+  const name = Object.hasOwn(ICONS, action) ? action : 'working';
+  const color = COLORS[name];
+  const background = mix(color, '#0b0b12', .8);
+  const palette = {
+    '#': color, o: mix(color, background, .45), g: mix(color, background, .6), k: background,
+    w: PAPER, y: '#ffe08a', s: '#ffd98a', l: '#8fe6a8',
+  };
+  const grid = new Grid(16, 16);
+  const frame = Math.floor(progress * BADGE_FRAMES) % BADGE_FRAMES;
+  for (const part of ICONS[name](frame)) grid.put(part.sprite, 2 + part.x, 2 + part.y, palette);
+  return grid.svg(8, background, '', 128);
 }
 
-module.exports = { ACTIONS, COLORS, icon, drawBadge };
+module.exports = { ACTIONS, COLORS, BADGE_FRAMES, drawBadge };

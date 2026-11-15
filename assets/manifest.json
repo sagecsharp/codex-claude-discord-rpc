@@ -1,13 +1,13 @@
 {
-  "version": 2,
+  "version": 3,
+  "style": "pixel art",
   "width": 256,
   "height": 256,
-  "frames": 80,
-  "frameDurationMs": 50,
-  "loopDurationMs": 4000,
+  "frames": 16,
+  "frameDurationMs": 120,
+  "loopDurationMs": 1920,
   "animatedFormat": "gif",
   "staticFormat": "png",
-  "background": "#000000",
   "opaque": true,
   "providers": [
     "codex",
@@ -20,6 +20,13 @@
     "waiting",
     "idle"
   ],
+  "characters": {
+    "claude": "clawd",
+    "codex": "codex pet",
+    "deepseek": "whale",
+    "opencode": "opencode mark",
+    "glm": "z.ai mark"
+  },
   "combined": "both-working",
   "combinedStates": [
     "working",
@@ -36,18 +43,12 @@
     "pattern": "{model}-{state}",
     "defaultPattern": "opencode-{state}"
   },
-  "sources": {
-    "brands": "simple-icons@develop + lobehub/icons@1.102.0",
-    "opencode": "simple-icons",
-    "deepseek": "simple-icons",
-    "glm": "lobehub/icons (chatglm)"
-  },
   "actionBadges": {
     "width": 128,
     "height": 128,
-    "frames": 48,
-    "frameDurationMs": 50,
-    "loopDurationMs": 2400,
+    "frames": 16,
+    "frameDurationMs": 120,
+    "loopDurationMs": 1920,
     "actions": [
       "working",
       "thinking",
@@ -65,7 +66,6 @@
   },
   "split": {
     "pattern": "split-{codexState}-{claudeState}",
-    "axis": "vertical",
     "left": "codex",
     "right": "claude",
     "states": [
@@ -75,8 +75,8 @@
     ],
     "width": 256,
     "height": 256,
-    "frames": 80,
-    "frameDurationMs": 50,
-    "loopDurationMs": 4000
+    "frames": 16,
+    "frameDurationMs": 120,
+    "loopDurationMs": 1920
   }
 }

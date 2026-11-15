@@ -1,8 +1,8 @@
 # codex + claude + opencode for discord
 
-three coding assistants, one discord presence. local activity, model-aware logos, and token usage where it is available.
+three coding assistants, one discord presence. pixel mascots that show what each one is doing, plus token usage where it is available.
 
-![codex, claude, and opencode motion preview](assets/overview-opencode.png)
+![the codex pet, clawd and the deepseek whale as pixel art](assets/overview-pixel.png)
 
 fork of [telljoe/claude-discord-rpc-dist](https://github.com/telljoe/claude-discord-rpc-dist). the original license is preserved. this fork does not update itself from the original repository.
 
@@ -16,7 +16,7 @@ cd codex-claude-discord-rpc
 node rpc.js
 ```
 
-the default configuration retains the upstream public discord application id and uses this fork's hosted animations. the discord application name stays `codex + claude`; the card content covers all three assistants. to use your own discord application or change preferences, run `node scripts/setup.js`.
+the default configuration retains the upstream public discord application id and uses this fork's hosted pixel art. the discord application name stays `codex + claude`; the card content covers all three assistants. to use your own discord application or change preferences, run `node scripts/setup.js`.
 
 to install in your user account and start at login:
 
@@ -31,28 +31,29 @@ the installer copies this local checkout to `%LOCALAPPDATA%\CodexClaudeRPC`. it 
 - plain-language actions such as `codex: running tests`, `claude: editing files`, and `opencode: searching code`.
 - the saved conversation title beside each active codex or claude action. opencode titles are not read.
 - the estimated api cost of the pinned providers (claude by default) as an all-time total and today, with recent token counts beside it when codex or claude have sessions. opencode shows its model instead of a pending token number.
-- when idle: the codex and claude logos, all-time locally recorded tokens for each, and their estimated api costs for all-time and today, pinned providers first.
-- a white chatgpt knot with a mint orbit, a coral claude sun with a warm pulse, a blue deepseek whale, and a purple glm mark.
-- opencode shows which model it is using by putting the GLM or DeepSeek logo itself on the large card. other opencode models fall back to the opencode mark.
-- when codex and claude are the two active assistants, one split logo: chatgpt on the left, claude on the right, with each half showing its own activity.
-- while opencode is active it keeps the large card, so the GLM or DeepSeek logo stays visible even when codex or claude are also active. the other actions stay in the text and hover.
-- four animations each for codex, claude, plain opencode, glm, and deepseek, four paired-logo animations, and nine split-state combinations. each is a seamless four-second, 20 fps loop.
-- distinct action badges for editing, reading, searching, testing, terminal commands, browsing, reviewing, thinking, waiting, finished, idle, and other work.
+- when idle: the codex pet and clawd asleep, all-time locally recorded tokens for each, and their estimated api costs for all-time and today, pinned providers first.
+- pixel art mascots instead of logos where the ai has one: clawd for claude, the codex app's pet for codex, and a little whale for deepseek. opencode and glm have no mascot, so their own blocky marks hop around instead.
+- each one acts out its state: sparkles while working, a thought bubble while thinking, a `?` bubble when it is waiting for you, and asleep with floating z's when idle.
+- opencode shows which model it is using by putting the glm mark or the deepseek whale on the large card. other opencode models fall back to the opencode mark.
+- when codex and claude are the two active assistants they share the picture: the codex pet on the left, clawd on the right, each acting out its own state.
+- while opencode is active it keeps the large card, so the glm mark or deepseek whale stays visible even when codex or claude are also active. the other actions stay in the text and hover.
+- four animations each for codex, claude, plain opencode, glm, and deepseek, four of codex and claude together, and nine mixed-state combinations. each is a short loop of 16 frames at a chunky 8 fps.
+- distinct pixel badges for editing, reading, searching, testing, terminal commands, browsing, reviewing, thinking, waiting, finished, idle, and other work.
 - an elapsed timer and an optional project folder name.
 
-when codex and claude are the two active assistants, every display mode uses a split image with half of each logo. each side animates independently for working, thinking, or waiting. the split stays in place while the small action badge can alternate between assistants. once nothing is active, the paired full logos and lifetime totals return.
+when codex and claude are the two active assistants, every display mode uses the shared picture with both mascots side by side. each side animates independently for working, thinking, or waiting. it stays in place while the small action badge can alternate between assistants. once nothing is active, both fall asleep and the lifetime totals return.
 
-![split logos while codex and claude are active](assets/split-working-working.gif?v=2)
+![the codex pet and clawd working side by side](assets/split-working-waiting.gif?v=3)
 
-![deepseek and glm logos on the opencode card](assets/deepseek-working.gif?v=2) ![glm logo on the opencode card](assets/glm-working.gif?v=2)
+![clawd thinking](assets/claude-thinking.gif?v=3) ![the codex pet working](assets/codex-working.gif?v=3) ![the deepseek whale on the opencode card](assets/deepseek-working.gif?v=3) ![the glm mark on the opencode card](assets/glm-working.gif?v=3)
 
-`auto` follows the active provider when only one is active. the small badge shows the current action: a pencil for edits, a magnifier for searches, a checklist for tests, and a pause icon when waiting for you. `combined` also keeps both logos visible when one recent session is idle. `rotate` gives recent idle providers a turn as the main logo. opencode overrides the rotation while it is active so its model logo stays on screen. text keeps every active provider's action and usage visible in every mode. the discord member list uses the action line too.
+`auto` follows the active provider when only one is active. the small badge shows the current action: a pencil for edits, a magnifier for searches, a bubbling flask for tests, and an hourglass when waiting for you. `combined` also keeps both mascots visible when one recent session is idle. `rotate` gives recent idle providers a turn as the main picture. opencode overrides the rotation while it is active so its model art stays on screen. text keeps every active provider's action and usage visible in every mode. the discord member list uses the action line too.
 
 action text comes from a fixed vocabulary. raw commands, prompts, and tool inputs never appear on discord. fast tool results keep their action visible for up to eight seconds to avoid flicker. a finished action stays visible for `doneSeconds` (20 seconds by default), then the all-time idle card appears.
 
-there is no text baked into the images. the artwork contains only logos, motion, and action pictograms on pure black; labels stay in discord's normal text fields. glow is confined to the logos, with crisp unlit action icons and orbit lines.
+there is no text baked into the images. the artwork is hard-edged pixel art on a colored tile per assistant; labels stay in discord's normal text fields.
 
-open [the interactive animation preview](assets/preview.html) from your local checkout to compare the codex and claude motion and pause it. github displays the html source; download or clone first. the still deepseek and glm logos are in `assets/`.
+open [the interactive animation preview](assets/preview.html) from your local checkout to try every state and action and pause the motion. github displays the html source; download or clone first.
 
 ## settings
 
@@ -70,10 +71,10 @@ optional `config.json` overrides [config.example.json](config.example.json). it 
 ```
 
 - `privacy`: `minimal` shows provider, state, model, and optional usage. `project` also shows the current folder's name. prompt text, commands, file contents, and full paths are never published. `hideProjects` accepts folder globs such as `client-*`.
-- `providers`: set `codex`, `claude`, or `opencode` to false to hide that provider. opencode shows the glm or deepseek logo while that model is active; other models use the plain opencode logo.
+- `providers`: set `codex`, `claude`, or `opencode` to false to hide that provider. opencode shows the glm mark or the deepseek whale while that model is active; other models use the plain opencode mark.
 - `alwaysShowCost`: providers (`codex` and/or `claude`, default `["claude"]`) whose estimated cost stays on the card even when another provider is the one working. a codex or claude session on the card also shows its own cost once the history index is ready. opencode has no cost. `[]` shows cost only for the codex and claude sessions on the card.
 - `showTokens`: false hides usage and the cost line. `showWhenIdle`: true (default) shows the all-time idle card; false clears the presence when nothing is active.
-- `showConversationTitle`: true in the bundled configuration shows saved conversation titles in discord's text fields. set false to hide them. titles are shortened to fit the active assistants; logo hover allows more title text within discord's text limit. missing titles leave the usual action labels visible. titles are read from codex's session index and claude's explicit session/title metadata, never guessed from prompt text, and opencode titles are not read.
+- `showConversationTitle`: true in the bundled configuration shows saved conversation titles in discord's text fields. set false to hide them. titles are shortened to fit the active assistants; hovering the picture allows more title text within discord's text limit. missing titles leave the usual action labels visible. titles are read from codex's session index and claude's explicit session/title metadata, never guessed from prompt text, and opencode titles are not read.
 - `images.baseUrl`: public https directory containing the bundled gifs. `images.animated: false` selects png stills. for developer portal uploads, use the png files and name keys like `codex_working`, `claude_working`, `deepseek_working`, `glm_working`, and `opencode_working`, then set `images.portal: true`.
 - `codexRoot`: custom sessions directory (default `$CODEX_HOME/sessions` or `~/.codex/sessions`). `claudeRoot`: custom claude home (default `$CLAUDE_CONFIG_DIR` or `~/.claude`). `opencodeRoot`: custom opencode data directory (default `$OPENCODE_DATA_DIR`, `$XDG_DATA_HOME/opencode`, or `~/.local/share/opencode`).
 - `codexHistoryRoot`: custom codex home containing `sessions` and `archived_sessions`. defaults to `$CODEX_HOME`, `~/.codex`, or the parent of a custom `codexRoot`.
@@ -120,7 +121,7 @@ npm ci
 npm run assets
 ```
 
-source vectors and their attribution are in [assets/credits.txt](assets/credits.txt). opencode and deepseek marks come from simple-icons (cc0); the chatglm mark comes from lobehub icons (mit). the logos identify the products; this project is not affiliated with openai, anthropic, opencode, deepseek, or zhipu ai. see [license](LICENSE) and [notice](NOTICE).
+all of the art is drawn in code (`scripts/pixel-art.cjs`, `scripts/action-art.cjs`); nothing is copied from official image files. the characters are fan redraws that identify the products, and what each one is based on is listed in [assets/credits.txt](assets/credits.txt). this project is not affiliated with openai, anthropic, opencode, deepseek, or zhipu ai. see [license](LICENSE) and [notice](NOTICE).
 
 
 this shit is all vibe coded lmfao
